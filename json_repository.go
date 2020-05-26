@@ -37,8 +37,8 @@ func NewJsonStorage() (*jsonStorage, error) {
 	return s, nil
 }
 
-func (s *jsonStorage) AddDB(data dbMetaData) error {
-	err := s.db.Write(db, "1", data)
+func (s *jsonStorage) AddDB(info dbInfo) error {
+	err := s.db.Write(db, "1", info)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (s *jsonStorage) AddDB(data dbMetaData) error {
 }
 
 func (s *jsonStorage) IsDBAdded(dbName string) (bool, error) {
-	dbMeta := dbMetaData{}
+	dbMeta := dbInfo{}
 	err := s.db.Read(db, "1", &dbMeta)
 	if err != nil {
 		if os.IsNotExist(err) {

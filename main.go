@@ -49,7 +49,7 @@ func setupDBMetaData(storage Repository) error {
 	if exists, err := storage.IsDBAdded(*dbName); err != nil {
 		return err
 	} else if !exists {
-		data := dbMetaData{
+		data := dbInfo{
 			Name:     *dbName,
 			User:     *dbUser,
 			Host:     *dbHost,
@@ -94,14 +94,15 @@ func setupDBMetaData(storage Repository) error {
 	return nil
 }
 
+// Repo
 type Repository interface {
-	AddDB(dbMetaData) error
+	AddDB(dbInfo) error
 	AddTable(name string) error
 	AddDBTableColMetaData(tbName string, col colMetaData) error
 	IsDBAdded(dbName string) (bool, error)
 }
 
-type dbMetaData struct {
+type dbInfo struct {
 	Name     string `json:"name"`
 	User     string `json:"user"`
 	Host     string `json:"host"`
@@ -111,12 +112,15 @@ type dbMetaData struct {
 }
 
 type colMetaData struct {
-	Name     string `json:"name"`
-	DBType   string `json:"db_type"`
-	Nullable bool   `json:"nullable"`
-	GoType   string `json:"go_type"`
-	Length   int64  `json:"length"`
-	TBName   string `json:"table_name"`
+	Name         string `json:"name"`
+	DBType       string `json:"db_type"`
+	Nullable     bool   `json:"nullable"`
+	GoType       string `json:"go_type"`
+	Length       int64  `json:"length"`
+	TBName       string `json:"table_name"`
+	Description  string `json:"description"`
+	IsPrimaryKey bool   `json:"is_primary_key"`
+	IsForeignKey bool   `json:"is_foreign_key"`
 }
 
 func parseNullableFromCol(col *sql.ColumnType) bool {
