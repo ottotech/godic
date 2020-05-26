@@ -1,0 +1,7 @@
+.DB_store
+.idea
+*.DB_Store
+data
+config.json
+error.log
+bindata.go
