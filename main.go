@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/jimsmart/schema"
 	_ "github.com/lib/pq"
+	"html/template"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -59,6 +61,38 @@ func main() {
 	err = setupDBMetaData(storage)
 	if err != nil {
 		_logger.Fatalln(err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", index())
+	srv := http.Server{
+		Addr:    ":" + *port,
+		Handler: mux,
+	}
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		_logger.Println(err)
+	}
+}
+
+func index() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sb, err := Asset("index.html")
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
+			return
+		}
+		tpl, err := template.New("").Parse(string(sb))
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
+			return
+		}
+		err = tpl.Execute(w, nil)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+		}
 	}
 }
 
