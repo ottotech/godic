@@ -80,11 +80,14 @@ func setupDBMetaData(storage Repository) error {
 				meta.GoType = col.ScanType().String()
 				meta.Length = parseLengthFromCol(col)
 				meta.TBName = tableNames[i]
-				err = storage.AddTable(tableNames[i])
+
+				t := table{Name: tableNames[i]}
+				err = storage.AddTable(t)
 				if err != nil {
 					return err
 				}
-				err = storage.AddDBTableColMetaData(tableNames[i], meta)
+
+				err = storage.AddColMetaData(tableNames[i], meta)
 				if err != nil {
 					return err
 				}
@@ -94,12 +97,12 @@ func setupDBMetaData(storage Repository) error {
 	return nil
 }
 
-// Repo
 type Repository interface {
 	AddDB(dbInfo) error
-	AddTable(name string) error
-	AddDBTableColMetaData(tbName string, col colMetaData) error
+	AddTable(table) error
+	AddColMetaData(tbName string, col colMetaData) error
 	IsDBAdded(dbName string) (bool, error)
+	GetTables() (Tables, error)
 }
 
 type dbInfo struct {
@@ -121,6 +124,17 @@ type colMetaData struct {
 	Description  string `json:"description"`
 	IsPrimaryKey bool   `json:"is_primary_key"`
 	IsForeignKey bool   `json:"is_foreign_key"`
+}
+
+type table struct {
+	Name        string `json:""`
+	Description string `json:"description"`
+}
+
+type Tables []table
+
+func (t Tables) Count() int {
+	return len(t)
 }
 
 func parseNullableFromCol(col *sql.ColumnType) bool {

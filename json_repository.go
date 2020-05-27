@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	scribble "github.com/nanobox-io/golang-scribble"
 	"github.com/pkg/errors"
 	"os"
@@ -60,15 +61,15 @@ func (s *jsonStorage) IsDBAdded(dbName string) (bool, error) {
 	return true, nil
 }
 
-func (s *jsonStorage) AddTable(name string) error {
-	err := s.db.Write(collectionTable, name, name)
+func (s *jsonStorage) AddTable(t table) error {
+	err := s.db.Write(collectionTable, t.Name, t)
 	if err != nil {
-		return errors.Errorf("got error while trying to add table %s in storage; %s", name, err)
+		return errors.Errorf("got error while trying to add table %s in storage; %s", t.Name, err)
 	}
 	return nil
 }
 
-func (s *jsonStorage) AddDBTableColMetaData(tbName string, col colMetaData) error {
+func (s *jsonStorage) AddColMetaData(tbName string, col colMetaData) error {
 	ss, err := s.db.ReadAll(collectionColumn)
 	if err != nil && !os.IsNotExist(err) {
 		return errors.Errorf("got error while trying to add column meta data of column %s in table %s; %s",
@@ -83,4 +84,21 @@ func (s *jsonStorage) AddDBTableColMetaData(tbName string, col colMetaData) erro
 	}
 
 	return nil
+}
+
+func (s *jsonStorage) GetTables() (Tables, error) {
+	tables := make(Tables, 0)
+	list, err := s.db.ReadAll(collectionTable)
+	if err != nil {
+		return tables, err
+	}
+	for i := range list {
+		var t table
+		err := json.Unmarshal([]byte(list[i]), &t)
+		if err != nil {
+			return tables, err
+		}
+		tables = append(tables, t)
+	}
+	return tables, nil
 }
