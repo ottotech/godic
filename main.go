@@ -7,9 +7,11 @@ import (
 	"github.com/jimsmart/schema"
 	_ "github.com/lib/pq"
 	"log"
+	"os"
 )
 
 var DB *sql.DB
+var _logger *log.Logger
 
 const dbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
 
@@ -24,12 +26,26 @@ var (
 )
 
 func main() {
+	logFile, err := os.OpenFile("./error.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_logger = log.New(logFile, "Error Logger:\t", log.Ldate|log.Ltime|log.Lshortfile)
+	defer func() {
+		err := logFile.Close()
+		if err != nil {
+			_logger.Println(err)
+		}
+	}()
+
 	flag.Parse()
 	source := fmt.Sprintf(dbSource, *dbUser, *dbPassword, *dbHost, *dbPort, *dbName)
 	storage, err := NewJsonStorage()
 	if err != nil {
 		panic(err)
 	}
+
 	db, err := sql.Open(*dbDriver, source)
 	if err != nil {
 		panic(err)
@@ -37,11 +53,12 @@ func main() {
 	if err = db.Ping(); err != nil {
 		panic(err)
 	}
+
 	DB = db
 	fmt.Println("You connected to your database: ", *dbName)
 	err = setupDBMetaData(storage)
 	if err != nil {
-		log.Fatalln(err)
+		_logger.Fatalln(err)
 	}
 }
 
