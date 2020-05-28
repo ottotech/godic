@@ -24,7 +24,7 @@ func parseLengthFromCol(col *sql.ColumnType) int64 {
 // getPrimaryKeys will get all columns of the DB tables that are primary keys.
 func getPrimaryKeys() (PrimaryKeys, error) {
 	pks := make(PrimaryKeys, 0)
-	q := fmt.Sprintf(queryGetPKs)
+	q := fmt.Sprintf(psqlQueryGetPKs)
 	rows, err := DB.Query(q)
 	if err != nil {
 		return pks, err
@@ -49,7 +49,7 @@ func getPrimaryKeys() (PrimaryKeys, error) {
 // getForeignKeys will get all columns of the DB tables that are foreign keys.
 func getForeignKeys() (ForeignKeys, error) {
 	fks := make(ForeignKeys, 0)
-	q := fmt.Sprintf(queryGetFKs)
+	q := fmt.Sprintf(psqlQueryGetFKs)
 	rows, err := DB.Query(q)
 	if err != nil {
 		return fks, err
@@ -71,7 +71,7 @@ func getForeignKeys() (ForeignKeys, error) {
 	return fks, nil
 }
 
-var queryGetPKs = `
+var psqlQueryGetPKs = `
 	SELECT cu.column_name, 
 		   cu.table_name 
 	FROM   information_schema.key_column_usage AS cu 
@@ -80,7 +80,7 @@ var queryGetPKs = `
 	WHERE  tc.constraint_type = 'PRIMARY KEY'; 
 `
 
-var queryGetFKs = `
+var psqlQueryGetFKs = `
 	SELECT cu.column_name, 
 		   cu.table_name, 
 		   rc.delete_rule, 
