@@ -17,6 +17,11 @@ var _logger *log.Logger
 
 const dbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
 
+const (
+	pk = "PRIMARY KEY"
+	fk = "FOREIGN KEY"
+)
+
 var (
 	port       = flag.String("server_port", "8080", "port used for http server")
 	dbUser     = flag.String("db_user", "", "database user")
@@ -119,6 +124,16 @@ func setupDBMetaData(storage Repository) error {
 			return err
 		}
 
+		primaryKeysMap, err := getPrimaryKeys()
+		if err != nil {
+			return err
+		}
+
+		foreignKeysMap, err := getForeignKeys()
+		if err != nil {
+			return err
+		}
+
 		for i := range tableNames {
 			tableColumns, err := schema.Table(DB, tableNames[i])
 			if err != nil {
@@ -132,6 +147,12 @@ func setupDBMetaData(storage Repository) error {
 				meta.GoType = col.ScanType().String()
 				meta.Length = parseLengthFromCol(col)
 				meta.TBName = tableNames[i]
+
+				_, isPK := primaryKeysMap[meta.Name]
+				meta.IsPrimaryKey = isPK
+
+				_, isFK := foreignKeysMap[meta.Name]
+				meta.IsForeignKey = isFK
 
 				t := table{Name: tableNames[i]}
 				err = storage.AddTable(t)
@@ -149,46 +170,6 @@ func setupDBMetaData(storage Repository) error {
 	return nil
 }
 
-type Repository interface {
-	AddDB(dbInfo) error
-	AddTable(table) error
-	AddColMetaData(tbName string, col colMetaData) error
-	IsDBAdded(dbName string) (bool, error)
-	GetTables() (Tables, error)
-}
-
-type dbInfo struct {
-	Name     string `json:"name"`
-	User     string `json:"user"`
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Password string `json:"password"`
-	Driver   string `json:"driver"`
-}
-
-type colMetaData struct {
-	Name         string `json:"name"`
-	DBType       string `json:"db_type"`
-	Nullable     bool   `json:"nullable"`
-	GoType       string `json:"go_type"`
-	Length       int64  `json:"length"`
-	TBName       string `json:"table_name"`
-	Description  string `json:"description"`
-	IsPrimaryKey bool   `json:"is_primary_key"`
-	IsForeignKey bool   `json:"is_foreign_key"`
-}
-
-type table struct {
-	Name        string `json:""`
-	Description string `json:"description"`
-}
-
-type Tables []table
-
-func (t Tables) Count() int {
-	return len(t)
-}
-
 func parseNullableFromCol(col *sql.ColumnType) bool {
 	if isNullable, ok := col.Nullable(); !ok {
 		return false
@@ -204,3 +185,71 @@ func parseLengthFromCol(col *sql.ColumnType) int64 {
 		return length
 	}
 }
+
+// getPrimaryKeys will get all columns of the DB tables that are
+// primary keys. The returned map will have keys representing the
+// the column names and values representing the table names.
+func getPrimaryKeys() (map[string]string, error) {
+	m := make(map[string]string)
+	q := fmt.Sprintf(queryKeyColUsage, pk)
+	rows, err := DB.Query(q)
+	if err != nil {
+		return m, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			col   string
+			table string
+		)
+		if err := rows.Scan(&col, &table); err != nil {
+			return m, err
+		}
+		m[col] = table
+	}
+
+	if err := rows.Err(); err != nil {
+		return m, err
+	}
+
+	return m, nil
+}
+
+// getForeignKeys will get all columns of the DB tables that are
+// foreign keys. The returned map will have keys representing the
+// the column names and values representing the table names.
+func getForeignKeys() (map[string]string, error) {
+	m := make(map[string]string)
+	q := fmt.Sprintf(queryKeyColUsage, fk)
+	rows, err := DB.Query(q)
+	if err != nil {
+		return m, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			col, table string
+		)
+		if err := rows.Scan(&col, &table); err != nil {
+			return m, err
+		}
+		m[col] = table
+	}
+
+	if err := rows.Err(); err != nil {
+		return m, err
+	}
+
+	return m, nil
+}
+
+var queryKeyColUsage = `
+	SELECT cu.column_name, 
+		   cu.table_name 
+	FROM   information_schema.key_column_usage AS cu 
+		   JOIN information_schema.table_constraints AS tc 
+			 ON tc.constraint_name = cu.constraint_name 
+	WHERE  tc.constraint_type = '%s'; 
+`
