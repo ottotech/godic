@@ -71,6 +71,7 @@ func getForeignKeys() (ForeignKeys, error) {
 	return fks, nil
 }
 
+// getColsAndEnums will get all columns and their corresponding enum types from DB.
 func getColsAndEnums() (ColumnsAndEnums, error) {
 	ces := make(ColumnsAndEnums, 0)
 	q := psqlQueryEnumTypesAndCols
