@@ -26,6 +26,7 @@ var (
 	dbPort     = flag.Int("db_port", 5432, "database port")
 	dbName     = flag.String("db_name", "", "database name")
 	dbDriver   = flag.String("db_driver", "postgres", "database driver")
+	dbSchema   = flag.String("db_schema", "public", "database schema for search_path")
 )
 
 func main() {
@@ -54,6 +55,10 @@ func main() {
 		panic(err)
 	}
 	if err = db.Ping(); err != nil {
+		panic(err)
+	}
+	_, err = db.Exec(fmt.Sprintf("SET search_path=%s", *dbSchema))
+	if err != nil {
 		panic(err)
 	}
 
