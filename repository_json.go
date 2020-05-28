@@ -62,6 +62,7 @@ func (s *jsonStorage) IsDBAdded(dbName string) (bool, error) {
 }
 
 func (s *jsonStorage) AddTable(t table) error {
+	t.ID = t.Name
 	err := s.db.Write(collectionTable, t.Name, t)
 	if err != nil {
 		return errors.Errorf("got error while trying to add table %s in storage; %s", t.Name, err)
@@ -77,6 +78,7 @@ func (s *jsonStorage) AddColMetaData(tbName string, col colMetaData) error {
 	}
 
 	resource := tbName + "_" + col.Name + "_" + strconv.Itoa(len(ss)+1)
+	col.ID = resource
 	err = s.db.Write(collectionColumn, resource, col)
 	if err != nil {
 		return errors.Errorf("got error while trying to add column meta data of column %s in table %s; %s",
