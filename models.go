@@ -43,6 +43,37 @@ type colMetaData struct {
 	UpdateRule   string `json:"update_rule"`
 }
 
+// primaryKey holds information about a primary key.
+type primaryKey struct {
+	Table string
+	Col   string
+}
+
+// PrimaryKeys is a collection of primary keys.
+type PrimaryKeys []primaryKey
+
+// exists checks whether a primary key with the given colName exists in PrimaryKeys or not.
+func (pks PrimaryKeys) exists(colName string) bool {
+	for i := range pks {
+		if pks[i].Col == colName {
+			return true
+		}
+	}
+	return false
+}
+
+// get will get the primary key with the given colName from PrimaryKeys.
+// if the primary key does not exist get() will return an error.
+func (pks PrimaryKeys) get(colName string) (primaryKey, error) {
+	for i := range pks {
+		if pks[i].Col == colName {
+			return pks[i], nil
+		}
+	}
+	return primaryKey{}, errors.Errorf("primary key with name %s does not exist", colName)
+}
+
+
 // foreignKey holds information about a foreign key.
 type foreignKey struct {
 	Table      string

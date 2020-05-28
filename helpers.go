@@ -21,34 +21,29 @@ func parseLengthFromCol(col *sql.ColumnType) int64 {
 	}
 }
 
-// getPrimaryKeys will get all columns of the DB tables that are
-// primary keys. The returned map will have keys representing the
-// the column names and values representing the table names.
-func getPrimaryKeys() (map[string]string, error) {
-	m := make(map[string]string)
+// getPrimaryKeys will get all columns of the DB tables that are primary keys.
+func getPrimaryKeys() (PrimaryKeys, error) {
+	pks := make(PrimaryKeys, 0)
 	q := fmt.Sprintf(queryGetPKs)
 	rows, err := DB.Query(q)
 	if err != nil {
-		return m, err
+		return pks, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var (
-			col   string
-			table string
-		)
-		if err := rows.Scan(&col, &table); err != nil {
-			return m, err
+		pk := primaryKey{}
+		if err := rows.Scan(&pk.Col, &pk.Table); err != nil {
+			return pks, err
 		}
-		m[col] = table
+		pks = append(pks, pk)
 	}
 
 	if err := rows.Err(); err != nil {
-		return m, err
+		return pks, err
 	}
 
-	return m, nil
+	return pks, nil
 }
 
 // getForeignKeys will get all columns of the DB tables that are foreign keys.

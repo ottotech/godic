@@ -119,7 +119,7 @@ func setupDBMetaData(storage Repository) error {
 			return err
 		}
 
-		primaryKeysMap, err := getPrimaryKeys()
+		primaryKeys, err := getPrimaryKeys()
 		if err != nil {
 			return err
 		}
@@ -143,8 +143,9 @@ func setupDBMetaData(storage Repository) error {
 				colMeta.Length = parseLengthFromCol(col)
 				colMeta.TBName = tableNames[i]
 
-				_, isPK := primaryKeysMap[colMeta.Name]
-				colMeta.IsPrimaryKey = isPK
+				if isPK := primaryKeys.exists(colMeta.Name); isPK {
+					colMeta.IsPrimaryKey = true
+				}
 
 				if isFK := foreignKeys.exists(colMeta.Name); isFK {
 					fk, err := foreignKeys.get(colMeta.Name)
