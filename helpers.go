@@ -49,7 +49,7 @@ func getPrimaryKeys() (PrimaryKeys, error) {
 // getForeignKeys will get all columns of the DB tables that are foreign keys.
 func getForeignKeys() (ForeignKeys, error) {
 	fks := make(ForeignKeys, 0)
-	q := fmt.Sprintf(psqlQueryGetFKs)
+	q := psqlQueryGetFKs
 	rows, err := DB.Query(q)
 	if err != nil {
 		return fks, err
@@ -69,6 +69,30 @@ func getForeignKeys() (ForeignKeys, error) {
 	}
 
 	return fks, nil
+}
+
+func getColsAndEnums() (ColumnsAndEnums, error) {
+	ces := make(ColumnsAndEnums, 0)
+	q := psqlQueryEnumTypesAndCols
+	rows, err := DB.Query(q)
+	if err != nil {
+		return ces, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		ce := colAndEnum{}
+		if err := rows.Scan(&ce.Table, &ce.Col, &ce.EnumName, &ce.EnumValue); err != nil {
+			return ces, err
+		}
+		ces = append(ces, ce)
+	}
+
+	if err := rows.Err(); err != nil {
+		return ces, err
+	}
+
+	return ces, nil
 }
 
 var psqlQueryGetPKs = `
@@ -91,4 +115,21 @@ var psqlQueryGetFKs = `
 		   JOIN information_schema.referential_constraints AS rc 
 			 ON tc.constraint_name = rc.constraint_name 
 	WHERE  tc.constraint_type = 'FOREIGN KEY';
+`
+
+var psqlQueryEnumTypesAndCols = `
+	SELECT isc.table_name, 
+		   isc.column_name, 
+		   t.typname                     AS enum_name, 
+		   String_agg(e.enumlabel, ', ') AS enum_value 
+	FROM   pg_type AS t 
+		   JOIN pg_enum e 
+			 ON t.oid = e.enumtypid 
+		   JOIN pg_catalog.pg_namespace n 
+			 ON n.oid = t.typnamespace 
+		   JOIN information_schema.columns AS isc 
+			 ON isc.udt_name = t.typname 
+	GROUP  BY enum_name, 
+			  isc.column_name, 
+			  isc.table_name; 
 `

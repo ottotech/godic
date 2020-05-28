@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var DB *sql.DB
@@ -129,6 +130,11 @@ func setupDBMetaData(storage Repository) error {
 			return err
 		}
 
+		enums, err := getColsAndEnums()
+		if err != nil {
+			return err
+		}
+
 		for i := range tableNames {
 			tableColumns, err := schema.Table(DB, tableNames[i])
 			if err != nil {
@@ -155,6 +161,16 @@ func setupDBMetaData(storage Repository) error {
 					colMeta.IsForeignKey = true
 					colMeta.DeleteRule = fk.DeleteRule
 					colMeta.UpdateRule = fk.UpdateRule
+				}
+
+				if hasEnum := enums.exists(colMeta.Name); hasEnum {
+					enum, err := enums.get(colMeta.Name)
+					if err != nil {
+						return err
+					}
+					colMeta.HasENUM = true
+					colMeta.ENUMName = enum.EnumName
+					colMeta.ENUMValues = strings.Split(enum.EnumValue, ",")
 				}
 
 				t := table{Name: tableNames[i]}

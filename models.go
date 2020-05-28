@@ -29,18 +29,21 @@ func (t Tables) Count() int {
 
 // colMetaData holds meta data about a specific column in a table from DB.
 type colMetaData struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	DBType       string `json:"db_type"`
-	Nullable     bool   `json:"nullable"`
-	GoType       string `json:"go_type"`
-	Length       int64  `json:"length"`
-	TBName       string `json:"table_name"`
-	Description  string `json:"description"`
-	IsPrimaryKey bool   `json:"is_primary_key"`
-	IsForeignKey bool   `json:"is_foreign_key"`
-	DeleteRule   string `json:"delete_rule"`
-	UpdateRule   string `json:"update_rule"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	DBType       string   `json:"db_type"`
+	Nullable     bool     `json:"nullable"`
+	GoType       string   `json:"go_type"`
+	Length       int64    `json:"length"`
+	TBName       string   `json:"table_name"`
+	Description  string   `json:"description"`
+	IsPrimaryKey bool     `json:"is_primary_key"`
+	IsForeignKey bool     `json:"is_foreign_key"`
+	DeleteRule   string   `json:"delete_rule"`
+	UpdateRule   string   `json:"update_rule"`
+	HasENUM      bool     `json:"has_enum"`
+	ENUMName     string   `json:"enum_name"`
+	ENUMValues   []string `json:"enum_values"`
 }
 
 // primaryKey holds information about a primary key.
@@ -73,7 +76,6 @@ func (pks PrimaryKeys) get(colName string) (primaryKey, error) {
 	return primaryKey{}, errors.Errorf("primary key with name %s does not exist", colName)
 }
 
-
 // foreignKey holds information about a foreign key.
 type foreignKey struct {
 	Table      string
@@ -104,4 +106,36 @@ func (fks ForeignKeys) get(colName string) (foreignKey, error) {
 		}
 	}
 	return foreignKey{}, errors.Errorf("foreign key with name %s does not exist", colName)
+}
+
+// colAndEnum holds information about a column and its enum type.
+type colAndEnum struct {
+	Table     string
+	Col       string
+	EnumName  string
+	EnumValue string
+}
+
+// ColumnsAndEnums is a collection of columns with their corresponding enum types.
+type ColumnsAndEnums []colAndEnum
+
+// exists checks whether a column with the given colName exists in ColumnsAndEnums a or not.
+func (ces ColumnsAndEnums) exists(colName string) bool {
+	for i := range ces {
+		if ces[i].Col == colName {
+			return true
+		}
+	}
+	return false
+}
+
+// get will get the column with the given colName and its enum type from ColumnsAndEnums.
+// if the colName does not exist get() will return an error.
+func (ces ColumnsAndEnums) get(colName string) (colAndEnum, error) {
+	for i := range ces {
+		if ces[i].Col == colName {
+			return ces[i], nil
+		}
+	}
+	return colAndEnum{}, errors.Errorf("column %s does not have any enum type.", colName)
 }
