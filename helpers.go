@@ -26,7 +26,7 @@ func parseLengthFromCol(col *sql.ColumnType) int64 {
 // the column names and values representing the table names.
 func getPrimaryKeys() (map[string]string, error) {
 	m := make(map[string]string)
-	q := fmt.Sprintf(queryKeyColUsage, pk)
+	q := fmt.Sprintf(queryGetPKs)
 	rows, err := DB.Query(q)
 	if err != nil {
 		return m, err
@@ -51,40 +51,49 @@ func getPrimaryKeys() (map[string]string, error) {
 	return m, nil
 }
 
-// getForeignKeys will get all columns of the DB tables that are
-// foreign keys. The returned map will have keys representing the
-// the column names and values representing the table names.
-func getForeignKeys() (map[string]string, error) {
-	m := make(map[string]string)
-	q := fmt.Sprintf(queryKeyColUsage, fk)
+// getForeignKeys will get all columns of the DB tables that are foreign keys.
+func getForeignKeys() (ForeignKeys, error) {
+	fks := make(ForeignKeys, 0)
+	q := fmt.Sprintf(queryGetFKs)
 	rows, err := DB.Query(q)
 	if err != nil {
-		return m, err
+		return fks, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var (
-			col, table string
-		)
-		if err := rows.Scan(&col, &table); err != nil {
-			return m, err
+		fk := foreignKey{}
+		if err := rows.Scan(&fk.Col, &fk.Table, &fk.DeleteRule, &fk.UpdateRule); err != nil {
+			return fks, err
 		}
-		m[col] = table
+		fks = append(fks, fk)
 	}
 
 	if err := rows.Err(); err != nil {
-		return m, err
+		return fks, err
 	}
 
-	return m, nil
+	return fks, nil
 }
 
-var queryKeyColUsage = `
+var queryGetPKs = `
 	SELECT cu.column_name, 
 		   cu.table_name 
 	FROM   information_schema.key_column_usage AS cu 
 		   JOIN information_schema.table_constraints AS tc 
 			 ON tc.constraint_name = cu.constraint_name 
-	WHERE  tc.constraint_type = '%s'; 
+	WHERE  tc.constraint_type = 'PRIMARY KEY'; 
+`
+
+var queryGetFKs = `
+	SELECT cu.column_name, 
+		   cu.table_name, 
+		   rc.delete_rule, 
+		   rc.update_rule 
+	FROM   information_schema.key_column_usage AS cu 
+		   JOIN information_schema.table_constraints AS tc 
+			 ON tc.constraint_name = cu.constraint_name 
+		   JOIN information_schema.referential_constraints AS rc 
+			 ON tc.constraint_name = rc.constraint_name 
+	WHERE  tc.constraint_type = 'FOREIGN KEY';
 `

@@ -1,5 +1,7 @@
 package main
 
+import "github.com/pkg/errors"
+
 // dbInfo holds information about the DB.
 type dbInfo struct {
 	Name     string `json:"name"`
@@ -37,4 +39,38 @@ type colMetaData struct {
 	Description  string `json:"description"`
 	IsPrimaryKey bool   `json:"is_primary_key"`
 	IsForeignKey bool   `json:"is_foreign_key"`
+	DeleteRule   string `json:"delete_rule"`
+	UpdateRule   string `json:"update_rule"`
+}
+
+// foreignKey holds information about a foreign key.
+type foreignKey struct {
+	Table      string
+	Col        string
+	DeleteRule string
+	UpdateRule string
+}
+
+// ForeignKeys is a collection of foreign keys.
+type ForeignKeys []foreignKey
+
+// exists checks whether a foreign key with the given colName exists in ForeignKeys or not.
+func (fks ForeignKeys) exists(colName string) bool {
+	for i := range fks {
+		if fks[i].Col == colName {
+			return true
+		}
+	}
+	return false
+}
+
+// get will get the foreign key with the given colName from  ForeignKeys.
+// if the foreign key does not exist get() will return an error.
+func (fks ForeignKeys) get(colName string) (foreignKey, error) {
+	for i := range fks {
+		if fks[i].Col == colName {
+			return fks[i], nil
+		}
+	}
+	return foreignKey{}, errors.Errorf("foreign key with name %s does not exist", colName)
 }

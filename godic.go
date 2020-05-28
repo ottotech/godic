@@ -17,11 +17,6 @@ var _logger *log.Logger
 
 const dbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
 
-const (
-	pk = "PRIMARY KEY"
-	fk = "FOREIGN KEY"
-)
-
 var (
 	port       = flag.String("server_port", "8080", "port used for http server")
 	dbUser     = flag.String("db_user", "", "database user")
@@ -129,7 +124,7 @@ func setupDBMetaData(storage Repository) error {
 			return err
 		}
 
-		foreignKeysMap, err := getForeignKeys()
+		foreignKeys, err := getForeignKeys()
 		if err != nil {
 			return err
 		}
@@ -140,19 +135,26 @@ func setupDBMetaData(storage Repository) error {
 				return err
 			}
 			for _, col := range tableColumns {
-				meta := colMetaData{}
-				meta.Name = col.Name()
-				meta.DBType = col.DatabaseTypeName()
-				meta.Nullable = parseNullableFromCol(col)
-				meta.GoType = col.ScanType().String()
-				meta.Length = parseLengthFromCol(col)
-				meta.TBName = tableNames[i]
+				colMeta := colMetaData{}
+				colMeta.Name = col.Name()
+				colMeta.DBType = col.DatabaseTypeName()
+				colMeta.Nullable = parseNullableFromCol(col)
+				colMeta.GoType = col.ScanType().String()
+				colMeta.Length = parseLengthFromCol(col)
+				colMeta.TBName = tableNames[i]
 
-				_, isPK := primaryKeysMap[meta.Name]
-				meta.IsPrimaryKey = isPK
+				_, isPK := primaryKeysMap[colMeta.Name]
+				colMeta.IsPrimaryKey = isPK
 
-				_, isFK := foreignKeysMap[meta.Name]
-				meta.IsForeignKey = isFK
+				if isFK := foreignKeys.exists(colMeta.Name); isFK {
+					fk, err := foreignKeys.get(colMeta.Name)
+					if err != nil {
+						return err
+					}
+					colMeta.IsForeignKey = true
+					colMeta.DeleteRule = fk.DeleteRule
+					colMeta.UpdateRule = fk.UpdateRule
+				}
 
 				t := table{Name: tableNames[i]}
 				err = storage.AddTable(t)
@@ -160,7 +162,7 @@ func setupDBMetaData(storage Repository) error {
 					return err
 				}
 
-				err = storage.AddColMetaData(tableNames[i], meta)
+				err = storage.AddColMetaData(tableNames[i], colMeta)
 				if err != nil {
 					return err
 				}
