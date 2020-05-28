@@ -101,7 +101,7 @@ func index() http.HandlerFunc {
 	}
 }
 
-// setupDBMetadata stores in repository all the
+// setupDBMetadata stores in repository all the DB metadata.
 func setupDBMetaData(storage Repository) error {
 	if exists, err := storage.IsDBAdded(*dbName); err != nil {
 		return err
