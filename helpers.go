@@ -96,6 +96,30 @@ func getColsAndEnums() (ColumnsAndEnums, error) {
 	return ces, nil
 }
 
+func getUniqueCols() (UniqueCols, error) {
+	ucs := make(UniqueCols, 0)
+	q := psqlQueryGetUniques
+	rows, err := DB.Query(q)
+	if err != nil {
+		return ucs, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		uc := uniqueCol{}
+		if err := rows.Scan(&uc.Table, &uc.Col, &uc.Definition); err != nil {
+			return ucs, err
+		}
+		ucs = append(ucs, uc)
+	}
+
+	if err := rows.Err(); err != nil {
+		return ucs, err
+	}
+
+	return ucs, nil
+}
+
 var psqlQueryGetPKs = `
 	SELECT cu.column_name, 
 		   cu.table_name 
@@ -137,3 +161,20 @@ var psqlQueryEnumTypesAndCols = `
 			  isc.column_name, 
 			  isc.table_name; 
 `
+
+var psqlQueryGetUniques = fmt.Sprintf(`
+	SELECT tbl.relname                     AS table_name, 
+		   pga.attname                     AS column_name, 
+		   Pg_get_indexdef(pgi.indexrelid) AS definition 
+	FROM   pg_index AS pgi 
+		   JOIN pg_class AS pgc 
+			 ON pgc.oid = pgi.indexrelid 
+		   JOIN pg_namespace AS pgn 
+			 ON pgn.oid = pgc.relnamespace 
+		   JOIN pg_class AS tbl 
+			 ON tbl.oid = pgi.indrelid 
+		   JOIN pg_attribute AS pga 
+			 ON pga.attrelid = pgc.oid 
+	WHERE  pgi.indisunique = true 
+		   AND pgn.nspname = '%s'; 
+`, *dbSchema)

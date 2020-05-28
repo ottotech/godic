@@ -140,6 +140,11 @@ func setupDBMetaData(storage Repository) error {
 			return err
 		}
 
+		uniques, err := getUniqueCols()
+		if err != nil {
+			return err
+		}
+
 		for i := range tableNames {
 			tableColumns, err := schema.Table(DB, tableNames[i])
 			if err != nil {
@@ -177,6 +182,15 @@ func setupDBMetaData(storage Repository) error {
 					colMeta.HasENUM = true
 					colMeta.ENUMName = enum.EnumName
 					colMeta.ENUMValues = strings.Split(enum.EnumValue, ",")
+				}
+
+				if exists := uniques.exists(colMeta.Name, tableNames[i]); exists {
+					uCol, err := uniques.get(colMeta.Name, tableNames[i])
+					if err != nil {
+						return err
+					}
+					colMeta.IsUnique = true
+					colMeta.UniqueIndexDefinition = uCol.Definition
 				}
 
 				t := table{Name: tableNames[i]}

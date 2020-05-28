@@ -29,22 +29,24 @@ func (t Tables) Count() int {
 
 // colMetaData holds meta data about a specific column in a table from DB.
 type colMetaData struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	DBType        string   `json:"db_type"`
-	Nullable      bool     `json:"nullable"`
-	GoType        string   `json:"go_type"`
-	Length        int64    `json:"length"`
-	TBName        string   `json:"table_name"`
-	Description   string   `json:"description"`
-	IsPrimaryKey  bool     `json:"is_primary_key"`
-	IsForeignKey  bool     `json:"is_foreign_key"`
-	TargetTableFK string   `json:"target_table_fk"`
-	DeleteRule    string   `json:"delete_rule"`
-	UpdateRule    string   `json:"update_rule"`
-	HasENUM       bool     `json:"has_enum"`
-	ENUMName      string   `json:"enum_name"`
-	ENUMValues    []string `json:"enum_values"`
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	DBType                string   `json:"db_type"`
+	Nullable              bool     `json:"nullable"`
+	GoType                string   `json:"go_type"`
+	Length                int64    `json:"length"`
+	TBName                string   `json:"table_name"`
+	Description           string   `json:"description"`
+	IsPrimaryKey          bool     `json:"is_primary_key"`
+	IsForeignKey          bool     `json:"is_foreign_key"`
+	TargetTableFK         string   `json:"target_table_fk"`
+	DeleteRule            string   `json:"delete_rule"`
+	UpdateRule            string   `json:"update_rule"`
+	HasENUM               bool     `json:"has_enum"`
+	ENUMName              string   `json:"enum_name"`
+	ENUMValues            []string `json:"enum_values"`
+	IsUnique              bool     `json:"is_unique"`
+	UniqueIndexDefinition string   `json:"unique_index_definition"`
 }
 
 // primaryKey holds information about a primary key.
@@ -140,4 +142,36 @@ func (ces ColumnsAndEnums) get(colName string) (colAndEnum, error) {
 		}
 	}
 	return colAndEnum{}, errors.Errorf("column %s does not have any enum type.", colName)
+}
+
+// uniqueCol holds information about unique columns.
+type uniqueCol struct {
+	Table      string
+	Col        string
+	Definition string
+}
+
+// uniqueCols is a collection of columns with unique indexes.
+type UniqueCols []uniqueCol
+
+// exists checks whether a column with the given colName in the given tbName and with an unique index exists or not.
+func (ucs UniqueCols) exists(colName string, tbName string) bool {
+	for i := range ucs {
+		if ucs[i].Col == colName && ucs[i].Table == tbName {
+			return true
+		}
+	}
+	return false
+}
+
+// get will get the column with unique index with the given colName and tbName.
+// If it does not exist get() will return an error.
+func (ucs UniqueCols) get(colName string, tbName string) (uniqueCol, error) {
+	for i := range ucs {
+		if ucs[i].Col == colName && ucs[i].Table == tbName {
+			return ucs[i], nil
+		}
+	}
+	return uniqueCol{}, errors.Errorf("there is no column with the given name %s and in the given table %s"+
+		" with a unique index.", colName, tbName)
 }
