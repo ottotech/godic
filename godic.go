@@ -159,6 +159,7 @@ func setupDBMetaData(storage Repository) error {
 						return err
 					}
 					colMeta.IsForeignKey = true
+					colMeta.TargetTableFK = fk.TargetTable
 					colMeta.DeleteRule = fk.DeleteRule
 					colMeta.UpdateRule = fk.UpdateRule
 				}

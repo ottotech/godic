@@ -29,21 +29,22 @@ func (t Tables) Count() int {
 
 // colMetaData holds meta data about a specific column in a table from DB.
 type colMetaData struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	DBType       string   `json:"db_type"`
-	Nullable     bool     `json:"nullable"`
-	GoType       string   `json:"go_type"`
-	Length       int64    `json:"length"`
-	TBName       string   `json:"table_name"`
-	Description  string   `json:"description"`
-	IsPrimaryKey bool     `json:"is_primary_key"`
-	IsForeignKey bool     `json:"is_foreign_key"`
-	DeleteRule   string   `json:"delete_rule"`
-	UpdateRule   string   `json:"update_rule"`
-	HasENUM      bool     `json:"has_enum"`
-	ENUMName     string   `json:"enum_name"`
-	ENUMValues   []string `json:"enum_values"`
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	DBType        string   `json:"db_type"`
+	Nullable      bool     `json:"nullable"`
+	GoType        string   `json:"go_type"`
+	Length        int64    `json:"length"`
+	TBName        string   `json:"table_name"`
+	Description   string   `json:"description"`
+	IsPrimaryKey  bool     `json:"is_primary_key"`
+	IsForeignKey  bool     `json:"is_foreign_key"`
+	TargetTableFK string   `json:"target_table_fk"`
+	DeleteRule    string   `json:"delete_rule"`
+	UpdateRule    string   `json:"update_rule"`
+	HasENUM       bool     `json:"has_enum"`
+	ENUMName      string   `json:"enum_name"`
+	ENUMValues    []string `json:"enum_values"`
 }
 
 // primaryKey holds information about a primary key.
@@ -78,10 +79,11 @@ func (pks PrimaryKeys) get(colName string) (primaryKey, error) {
 
 // foreignKey holds information about a foreign key.
 type foreignKey struct {
-	Table      string
-	Col        string
-	DeleteRule string
-	UpdateRule string
+	Table       string
+	TargetTable string
+	Col         string
+	DeleteRule  string
+	UpdateRule  string
 }
 
 // ForeignKeys is a collection of foreign keys.

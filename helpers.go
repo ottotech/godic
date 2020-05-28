@@ -58,7 +58,7 @@ func getForeignKeys() (ForeignKeys, error) {
 
 	for rows.Next() {
 		fk := foreignKey{}
-		if err := rows.Scan(&fk.Col, &fk.Table, &fk.DeleteRule, &fk.UpdateRule); err != nil {
+		if err := rows.Scan(&fk.Table, &fk.TargetTable, &fk.Col, &fk.DeleteRule, &fk.UpdateRule); err != nil {
 			return fks, err
 		}
 		fks = append(fks, fk)
@@ -105,8 +105,9 @@ var psqlQueryGetPKs = `
 `
 
 var psqlQueryGetFKs = `
-	SELECT cu.column_name, 
-		   cu.table_name, 
+	SELECT cu.table_name  AS origin_table_name, 
+		   icu.table_name AS target_table_name, 
+		   cu.column_name, 
 		   rc.delete_rule, 
 		   rc.update_rule 
 	FROM   information_schema.key_column_usage AS cu 
@@ -114,7 +115,9 @@ var psqlQueryGetFKs = `
 			 ON tc.constraint_name = cu.constraint_name 
 		   JOIN information_schema.referential_constraints AS rc 
 			 ON tc.constraint_name = rc.constraint_name 
-	WHERE  tc.constraint_type = 'FOREIGN KEY';
+		   JOIN information_schema.constraint_column_usage AS icu 
+			 ON icu.constraint_name = rc.constraint_name 
+	WHERE  tc.constraint_type = 'FOREIGN KEY'; 
 `
 
 var psqlQueryEnumTypesAndCols = `
