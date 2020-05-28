@@ -67,7 +67,7 @@ func (pks PrimaryKeys) exists(colName string) bool {
 }
 
 // get will get the primary key with the given colName from PrimaryKeys.
-// if the primary key does not exist get() will return an error.
+// If the primary key does not exist get() will return an error.
 func (pks PrimaryKeys) get(colName string) (primaryKey, error) {
 	for i := range pks {
 		if pks[i].Col == colName {
@@ -100,7 +100,7 @@ func (fks ForeignKeys) exists(colName string) bool {
 }
 
 // get will get the foreign key with the given colName from  ForeignKeys.
-// if the foreign key does not exist get() will return an error.
+// If the foreign key does not exist get() will return an error.
 func (fks ForeignKeys) get(colName string) (foreignKey, error) {
 	for i := range fks {
 		if fks[i].Col == colName {
@@ -132,7 +132,7 @@ func (ces ColumnsAndEnums) exists(colName string) bool {
 }
 
 // get will get the column with the given colName and its enum type from ColumnsAndEnums.
-// if the colName does not exist get() will return an error.
+// If the colName does not exist get() will return an error.
 func (ces ColumnsAndEnums) get(colName string) (colAndEnum, error) {
 	for i := range ces {
 		if ces[i].Col == colName {
