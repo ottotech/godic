@@ -17,14 +17,15 @@ var _logger *log.Logger
 const dbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
 
 var (
-	port       = flag.String("server_port", "8080", "port used for http server")
-	dbUser     = flag.String("db_user", "", "database user")
-	dbPassword = flag.String("db_password", "", "database password")
-	dbHost     = flag.String("db_host", "", "database host")
-	dbPort     = flag.Int("db_port", 5432, "database port")
-	dbName     = flag.String("db_name", "", "database name")
-	dbDriver   = flag.String("db_driver", "postgres", "database driver")
-	dbSchema   = flag.String("db_schema", "public", "database schema for search_path")
+	port        = flag.String("server_port", "8080", "port used for http server")
+	dbUser      = flag.String("db_user", "", "database user")
+	dbPassword  = flag.String("db_password", "", "database password")
+	dbHost      = flag.String("db_host", "", "database host")
+	dbPort      = flag.Int("db_port", 5432, "database port")
+	dbName      = flag.String("db_name", "", "database name")
+	dbDriver    = flag.String("db_driver", "postgres", "database driver")
+	dbSchema    = flag.String("db_schema", "public", "database schema for search_path")
+	forceDelete = flag.Bool("force_delete", false, "deletes completely any stored metadata of a database in order to start fresh")
 )
 
 func main() {
@@ -55,16 +56,18 @@ func main() {
 	if err = db.Ping(); err != nil {
 		panic(err)
 	}
-	_, err = db.Exec(fmt.Sprintf("SET search_path=%s", *dbSchema))
-	if err != nil {
-		panic(err)
-	}
 
 	DB = db
-	_logger.Println("You connected to your database: ", *dbName)
-	err = addDatabaseMetaData(storage)
+	log.Println("You connected to your database: ", *dbName)
+
+	err = runSetup(storage)
 	if err != nil {
-		_logger.Fatalln(err)
+		log.Fatalln(err)
+	}
+
+	_, err = DB.Exec(fmt.Sprintf("SET search_path=%s", *dbSchema))
+	if err != nil {
+		panic(err)
 	}
 
 	mux := http.NewServeMux()

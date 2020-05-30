@@ -10,6 +10,7 @@ type dbInfo struct {
 	Port     int    `json:"port"`
 	Password string `json:"password"`
 	Driver   string `json:"driver"`
+	Schema   string `json:"schema"`
 }
 
 // table represents a table in DB.

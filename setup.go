@@ -1,12 +1,80 @@
 package main
 
 import (
+	"fmt"
 	"github.com/jimsmart/schema"
 	"strings"
 )
 
-// addDatabaseMetaData stores in repository all the database metadata.
-func addDatabaseMetaData(storage Repository) error {
+func runSetup(storage Repository) error {
+	var err error
+
+	if *forceDelete {
+		goto DoForceDelete
+	}
+
+	if metaDataExists, err := storage.IsDatabaseMetaDataAdded(*dbName); err != nil {
+		return err
+	} else if metaDataExists {
+		databaseInfo, err := storage.GetDatabaseInfo()
+		if err != nil {
+			return err
+		}
+		equal, msg := compareStoredDatabaseInfoWithFlags(databaseInfo)
+		if !equal {
+			return fmt.Errorf("The flags provided do not match the ones stored in your "+
+				"database info.\nIf you are using the same database with different information "+
+				"you can run godic with the flag -update=true to update the info.\nOr if you want to "+
+				"remove completely the data dictionary of your previous database and start fresh you "+
+				"can run godic with the flag -force_delete=true (see documentation of this flag).\n\n"+
+				"Here some of the differences we found:\n%s", msg)
+		}
+		goto DoNothing
+	} else if !metaDataExists {
+		databaseInfo, err := storage.GetDatabaseInfo()
+		if err != nil {
+			if err == ErrNoDatabaseMetaDataStored {
+				goto DoSetup
+			}
+			return fmt.Errorf("got error when trying to run storage.GetDatabaseInfo(); %s", err)
+		}
+		return fmt.Errorf("there is already some metadata stored for the database %s "+
+			"with the following info:\n"+
+			"Port: %d\n"+
+			"User: %s\n"+
+			"Schema: %s\n"+
+			"Host: %s\n"+
+			"Password: %s\n"+
+			"Driver: %s\n\n"+
+			"If you want to remove this all database meta data you can run godic with the "+
+			"flag -force_delete=true (see documentation for this flag)\n",
+			databaseInfo.Name,
+			databaseInfo.Port,
+			databaseInfo.User,
+			databaseInfo.Schema,
+			databaseInfo.Host,
+			databaseInfo.Password,
+			databaseInfo.Driver,
+		)
+	}
+DoNothing:
+	return nil
+DoSetup:
+	err = databaseMetaDataSetup(storage)
+	if err != nil {
+		return err
+	}
+	return nil
+DoForceDelete:
+	err = storage.RemoveEverything()
+	if err != nil {
+		return err
+	}
+	goto DoSetup
+}
+
+// databaseMetaDataSetup stores in repository all the database metadata.
+func databaseMetaDataSetup(storage Repository) error {
 	data := dbInfo{
 		Name:     *dbName,
 		User:     *dbUser,
@@ -14,6 +82,7 @@ func addDatabaseMetaData(storage Repository) error {
 		Port:     *dbPort,
 		Password: *dbPassword,
 		Driver:   *dbDriver,
+		Schema:   *dbSchema,
 	}
 	err := storage.AddDatabaseInfo(data)
 	if err != nil {

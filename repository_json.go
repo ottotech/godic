@@ -104,3 +104,23 @@ func (s *jsonStorage) GetTables() (Tables, error) {
 	}
 	return tables, nil
 }
+
+func (s *jsonStorage) GetDatabaseInfo() (dbInfo, error) {
+	info := dbInfo{}
+	err := s.db.Read(db, "1", &info)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return info, ErrNoDatabaseMetaDataStored
+		}
+		return info, err
+	}
+	return info, nil
+}
+
+func (s *jsonStorage) RemoveEverything() error {
+	err := os.RemoveAll("./data/*")
+	if err != nil {
+		return err
+	}
+	return nil
+}
