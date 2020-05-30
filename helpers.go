@@ -123,8 +123,7 @@ func getUniqueCols() (UniqueCols, error) {
 
 // compareStoredDatabaseInfoWithFlags is a helper function that checks if the
 // stored database info matches the flags passed when running the application.
-// If there is no match we might tell the client to use the -update or -force_delete
-// flags.
+// If there is no match we might tell the client to use the -force_delete flag.
 func compareStoredDatabaseInfoWithFlags(dbInfo databaseInfo) (equal bool, message string) {
 	differences := make([]string, 0)
 	if dbInfo.User != *dbUser {
