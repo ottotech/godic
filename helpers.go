@@ -98,7 +98,7 @@ func getColsAndEnums() (ColumnsAndEnums, error) {
 
 func getUniqueCols() (UniqueCols, error) {
 	ucs := make(UniqueCols, 0)
-	q := psqlQueryGetUniques
+	q := psqlQueryGetUniquesColumns
 	rows, err := DB.Query(q)
 	if err != nil {
 		return ucs, err
@@ -107,7 +107,7 @@ func getUniqueCols() (UniqueCols, error) {
 
 	for rows.Next() {
 		uc := uniqueCol{}
-		if err := rows.Scan(&uc.Table, &uc.Col, &uc.Definition); err != nil {
+		if err := rows.Scan(&uc.Table, &uc.Col, &uc.UniqueDefinition); err != nil {
 			return ucs, err
 		}
 		ucs = append(ucs, uc)
@@ -162,7 +162,7 @@ var psqlQueryEnumTypesAndCols = `
 			  isc.table_name; 
 `
 
-var psqlQueryGetUniques = fmt.Sprintf(`
+var psqlQueryGetUniquesColumns = fmt.Sprintf(`
 	SELECT tbl.relname                     AS table_name, 
 		   pga.attname                     AS column_name, 
 		   Pg_get_indexdef(pgi.indexrelid) AS definition 

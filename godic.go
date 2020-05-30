@@ -4,13 +4,11 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/jimsmart/schema"
 	_ "github.com/lib/pq"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 )
 
 var DB *sql.DB
@@ -64,7 +62,7 @@ func main() {
 
 	DB = db
 	fmt.Println("You connected to your database: ", *dbName)
-	err = setupDBMetaData(storage)
+	err = addDatabaseMetaData(storage)
 	if err != nil {
 		_logger.Fatalln(err)
 	}
@@ -100,111 +98,4 @@ func index() http.HandlerFunc {
 			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 		}
 	}
-}
-
-// setupDBMetadata stores in repository all the DB metadata.
-func setupDBMetaData(storage Repository) error {
-	if exists, err := storage.IsDBAdded(*dbName); err != nil {
-		return err
-	} else if !exists {
-		data := dbInfo{
-			Name:     *dbName,
-			User:     *dbUser,
-			Host:     *dbHost,
-			Port:     *dbPort,
-			Password: *dbPassword,
-			Driver:   *dbDriver,
-		}
-		err := storage.AddDB(data)
-		if err != nil {
-			return err
-		}
-
-		tableNames, err := schema.TableNames(DB)
-		if err != nil {
-			return err
-		}
-
-		primaryKeys, err := getPrimaryKeys()
-		if err != nil {
-			return err
-		}
-
-		foreignKeys, err := getForeignKeys()
-		if err != nil {
-			return err
-		}
-
-		enums, err := getColsAndEnums()
-		if err != nil {
-			return err
-		}
-
-		uniques, err := getUniqueCols()
-		if err != nil {
-			return err
-		}
-
-		for i := range tableNames {
-			tableColumns, err := schema.Table(DB, tableNames[i])
-			if err != nil {
-				return err
-			}
-			for _, col := range tableColumns {
-				colMeta := colMetaData{}
-				colMeta.Name = col.Name()
-				colMeta.DBType = col.DatabaseTypeName()
-				colMeta.Nullable = parseNullableFromCol(col)
-				colMeta.GoType = col.ScanType().String()
-				colMeta.Length = parseLengthFromCol(col)
-				colMeta.TBName = tableNames[i]
-
-				if isPK := primaryKeys.exists(colMeta.Name); isPK {
-					colMeta.IsPrimaryKey = true
-				}
-
-				if isFK := foreignKeys.exists(colMeta.Name); isFK {
-					fk, err := foreignKeys.get(colMeta.Name)
-					if err != nil {
-						return err
-					}
-					colMeta.IsForeignKey = true
-					colMeta.TargetTableFK = fk.TargetTable
-					colMeta.DeleteRule = fk.DeleteRule
-					colMeta.UpdateRule = fk.UpdateRule
-				}
-
-				if hasEnum := enums.exists(colMeta.Name); hasEnum {
-					enum, err := enums.get(colMeta.Name)
-					if err != nil {
-						return err
-					}
-					colMeta.HasENUM = true
-					colMeta.ENUMName = enum.EnumName
-					colMeta.ENUMValues = strings.Split(enum.EnumValue, ",")
-				}
-
-				if exists := uniques.exists(colMeta.Name, tableNames[i]); exists {
-					uCol, err := uniques.get(colMeta.Name, tableNames[i])
-					if err != nil {
-						return err
-					}
-					colMeta.IsUnique = true
-					colMeta.UniqueIndexDefinition = uCol.Definition
-				}
-
-				t := table{Name: tableNames[i]}
-				err = storage.AddTable(t)
-				if err != nil {
-					return err
-				}
-
-				err = storage.AddColMetaData(tableNames[i], colMeta)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
 }

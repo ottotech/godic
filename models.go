@@ -58,21 +58,22 @@ type primaryKey struct {
 // PrimaryKeys is a collection of primary keys.
 type PrimaryKeys []primaryKey
 
-// exists checks whether a primary key with the given colName exists in PrimaryKeys or not.
-func (pks PrimaryKeys) exists(colName string) bool {
+// exists checks whether a primary key column with the given colName exists
+// in the given tableName or not.
+func (pks PrimaryKeys) exists(colName string, tableName string) bool {
 	for i := range pks {
-		if pks[i].Col == colName {
+		if pks[i].Col == colName && pks[i].Table == tableName {
 			return true
 		}
 	}
 	return false
 }
 
-// get will get the primary key with the given colName from PrimaryKeys.
+// get will get the primary key with the given colName in the given tableName.
 // If the primary key does not exist get() will return an error.
-func (pks PrimaryKeys) get(colName string) (primaryKey, error) {
+func (pks PrimaryKeys) get(colName string, tableName string) (primaryKey, error) {
 	for i := range pks {
-		if pks[i].Col == colName {
+		if pks[i].Col == colName && pks[i].Table == tableName {
 			return pks[i], nil
 		}
 	}
@@ -91,21 +92,21 @@ type foreignKey struct {
 // ForeignKeys is a collection of foreign keys.
 type ForeignKeys []foreignKey
 
-// exists checks whether a foreign key with the given colName exists in ForeignKeys or not.
-func (fks ForeignKeys) exists(colName string) bool {
+// exists checks whether a foreign key with the given colName in the given tableName exists or not in ForeignKeys.
+func (fks ForeignKeys) exists(colName string, tableName string) bool {
 	for i := range fks {
-		if fks[i].Col == colName {
+		if fks[i].Col == colName && fks[i].Table == tableName {
 			return true
 		}
 	}
 	return false
 }
 
-// get will get the foreign key with the given colName from  ForeignKeys.
+// get will get the foreign key with the given colName in the given tableName.
 // If the foreign key does not exist get() will return an error.
-func (fks ForeignKeys) get(colName string) (foreignKey, error) {
+func (fks ForeignKeys) get(colName string, tableName string) (foreignKey, error) {
 	for i := range fks {
-		if fks[i].Col == colName {
+		if fks[i].Col == colName && fks[i].Table == tableName {
 			return fks[i], nil
 		}
 	}
@@ -123,35 +124,35 @@ type colAndEnum struct {
 // ColumnsAndEnums is a collection of columns with their corresponding enum types.
 type ColumnsAndEnums []colAndEnum
 
-// exists checks whether a column with the given colName exists in ColumnsAndEnums a or not.
-func (ces ColumnsAndEnums) exists(colName string) bool {
+// exists checks whether a column with the given colName in the given tableNae exists in ColumnsAndEnums or not.
+func (ces ColumnsAndEnums) exists(colName string, tableName string) bool {
 	for i := range ces {
-		if ces[i].Col == colName {
+		if ces[i].Col == colName && ces[i].Table == tableName {
 			return true
 		}
 	}
 	return false
 }
 
-// get will get the column with the given colName and its enum type from ColumnsAndEnums.
+// get will get the column with the given colName and its enum type from the given tableName.
 // If the colName does not exist get() will return an error.
-func (ces ColumnsAndEnums) get(colName string) (colAndEnum, error) {
+func (ces ColumnsAndEnums) get(colName string, tableName string) (colAndEnum, error) {
 	for i := range ces {
-		if ces[i].Col == colName {
+		if ces[i].Col == colName && ces[i].Table == tableName {
 			return ces[i], nil
 		}
 	}
-	return colAndEnum{}, errors.Errorf("column %s does not have any enum type.", colName)
+	return colAndEnum{}, errors.Errorf("there is no column %s in table %s with an enum type.", colName, tableName)
 }
 
-// uniqueCol holds information about unique columns.
+// uniqueCol holds information about a column with a unique index.
 type uniqueCol struct {
-	Table      string
-	Col        string
-	Definition string
+	Table            string
+	Col              string
+	UniqueDefinition string
 }
 
-// uniqueCols is a collection of columns with unique indexes.
+// UniqueCols is a collection of columns with unique indexes.
 type UniqueCols []uniqueCol
 
 // exists checks whether a column with the given colName in the given tbName and with an unique index exists or not.
@@ -164,14 +165,14 @@ func (ucs UniqueCols) exists(colName string, tbName string) bool {
 	return false
 }
 
-// get will get the column with unique index with the given colName and tbName.
+// get will get the column with unique index with the given colName from the given tableName.
 // If it does not exist get() will return an error.
-func (ucs UniqueCols) get(colName string, tbName string) (uniqueCol, error) {
+func (ucs UniqueCols) get(colName string, tableName string) (uniqueCol, error) {
 	for i := range ucs {
-		if ucs[i].Col == colName && ucs[i].Table == tbName {
+		if ucs[i].Col == colName && ucs[i].Table == tableName {
 			return ucs[i], nil
 		}
 	}
 	return uniqueCol{}, errors.Errorf("there is no column with a unique index with the given name %s and in the "+
-		"given table %s.", colName, tbName)
+		"given table %s.", colName, tableName)
 }
