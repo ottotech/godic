@@ -61,7 +61,7 @@ func main() {
 	}
 
 	DB = db
-	fmt.Println("You connected to your database: ", *dbName)
+	_logger.Println("You connected to your database: ", *dbName)
 	err = addDatabaseMetaData(storage)
 	if err != nil {
 		_logger.Fatalln(err)
