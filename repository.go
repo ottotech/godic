@@ -2,7 +2,7 @@ package main
 
 import "errors"
 
-var ErrNoDatabaseMetaDataStored = errors.New("there is no database meta data stored in repository")
+var ErrNoDatabaseMetaDataStored = errors.New("there is no database metadata stored in repository")
 
 type Repository interface {
 	AddDatabaseInfo(databaseInfo) error
