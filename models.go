@@ -23,7 +23,7 @@ type table struct {
 // Tables is a collection of tables.
 type Tables []table
 
-// Count counts the number of tables the DB has.
+// Count counts the number of tables of the database.
 func (t Tables) Count() int {
 	return len(t)
 }
