@@ -13,7 +13,7 @@ type databaseInfo struct {
 	Schema   string `json:"schema"`
 }
 
-// table represents a table in DB.
+// table represents a table in database.
 type table struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
@@ -28,7 +28,7 @@ func (t Tables) Count() int {
 	return len(t)
 }
 
-// colMetaData holds meta data about a specific column in a table from DB.
+// colMetaData holds meta data about a specific column in a table from database.
 type colMetaData struct {
 	ID                    string   `json:"id"`
 	Name                  string   `json:"name"`
