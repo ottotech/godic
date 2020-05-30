@@ -125,25 +125,25 @@ func getUniqueCols() (UniqueCols, error) {
 // stored database info matches the flags passed when running the application.
 // If there is no match we might tell the client to use the -update or -force_delete
 // flags.
-func compareStoredDatabaseInfoWithFlags(info dbInfo) (equal bool, message string) {
+func compareStoredDatabaseInfoWithFlags(dbInfo databaseInfo) (equal bool, message string) {
 	differences := make([]string, 0)
-	if info.User != *dbUser {
-		differences = append(differences, fmt.Sprintf("stored user %s != %s", info.User, *dbUser))
+	if dbInfo.User != *dbUser {
+		differences = append(differences, fmt.Sprintf("stored user %s != %s", dbInfo.User, *dbUser))
 	}
-	if info.Password != *dbPassword {
-		differences = append(differences, fmt.Sprintf("stored db password %s != %s", info.Password, *dbPassword))
+	if dbInfo.Password != *dbPassword {
+		differences = append(differences, fmt.Sprintf("stored db password %s != %s", dbInfo.Password, *dbPassword))
 	}
-	if info.Name != *dbName {
-		differences = append(differences, fmt.Sprintf("stored db name %s != %s", info.Name, *dbName))
+	if dbInfo.Name != *dbName {
+		differences = append(differences, fmt.Sprintf("stored db name %s != %s", dbInfo.Name, *dbName))
 	}
-	if info.Driver != *dbDriver {
-		differences = append(differences, fmt.Sprintf("stored db driver %s != %s", info.Driver, *dbDriver))
+	if dbInfo.Driver != *dbDriver {
+		differences = append(differences, fmt.Sprintf("stored db driver %s != %s", dbInfo.Driver, *dbDriver))
 	}
-	if info.Host != *dbHost {
-		differences = append(differences, fmt.Sprintf("stored db host %s != %s", info.Host, *dbHost))
+	if dbInfo.Host != *dbHost {
+		differences = append(differences, fmt.Sprintf("stored db host %s != %s", dbInfo.Host, *dbHost))
 	}
-	if info.Port != *dbPort {
-		differences = append(differences, fmt.Sprintf("stored db port %d != %d", info.Port, *dbPort))
+	if dbInfo.Port != *dbPort {
+		differences = append(differences, fmt.Sprintf("stored db port %d != %d", dbInfo.Port, *dbPort))
 	}
 	if len(differences) > 0 {
 		message = strings.Join(differences, ".\n")

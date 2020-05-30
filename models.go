@@ -2,8 +2,8 @@ package main
 
 import "github.com/pkg/errors"
 
-// dbInfo holds information about the DB.
-type dbInfo struct {
+// databaseInfo holds general information about the database.
+type databaseInfo struct {
 	Name     string `json:"name"`
 	User     string `json:"user"`
 	Host     string `json:"host"`

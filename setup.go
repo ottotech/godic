@@ -75,7 +75,7 @@ DoForceDelete:
 
 // databaseMetaDataSetup stores in repository all the database metadata.
 func databaseMetaDataSetup(storage Repository) error {
-	data := dbInfo{
+	dbInfo := databaseInfo{
 		Name:     *dbName,
 		User:     *dbUser,
 		Host:     *dbHost,
@@ -84,7 +84,7 @@ func databaseMetaDataSetup(storage Repository) error {
 		Driver:   *dbDriver,
 		Schema:   *dbSchema,
 	}
-	err := storage.AddDatabaseInfo(data)
+	err := storage.AddDatabaseInfo(dbInfo)
 	if err != nil {
 		return err
 	}

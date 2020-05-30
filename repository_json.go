@@ -38,8 +38,8 @@ func NewJsonStorage() (*jsonStorage, error) {
 	return s, nil
 }
 
-func (s *jsonStorage) AddDatabaseInfo(info dbInfo) error {
-	err := s.db.Write(db, "1", info)
+func (s *jsonStorage) AddDatabaseInfo(dbInfo databaseInfo) error {
+	err := s.db.Write(db, "1", dbInfo)
 	if err != nil {
 		return err
 	}
@@ -47,15 +47,15 @@ func (s *jsonStorage) AddDatabaseInfo(info dbInfo) error {
 }
 
 func (s *jsonStorage) IsDatabaseMetaDataAdded(dbName string) (bool, error) {
-	dbMeta := dbInfo{}
-	err := s.db.Read(db, "1", &dbMeta)
+	dbInfo := databaseInfo{}
+	err := s.db.Read(db, "1", &dbInfo)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
 		}
 		return false, err
 	}
-	if dbMeta.Name != dbName {
+	if dbInfo.Name != dbName {
 		return false, nil
 	}
 	return true, nil
@@ -105,16 +105,16 @@ func (s *jsonStorage) GetTables() (Tables, error) {
 	return tables, nil
 }
 
-func (s *jsonStorage) GetDatabaseInfo() (dbInfo, error) {
-	info := dbInfo{}
-	err := s.db.Read(db, "1", &info)
+func (s *jsonStorage) GetDatabaseInfo() (databaseInfo, error) {
+	dbInfo := databaseInfo{}
+	err := s.db.Read(db, "1", &dbInfo)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return info, ErrNoDatabaseMetaDataStored
+			return dbInfo, ErrNoDatabaseMetaDataStored
 		}
-		return info, err
+		return dbInfo, err
 	}
-	return info, nil
+	return dbInfo, nil
 }
 
 func (s *jsonStorage) RemoveEverything() error {
