@@ -145,6 +145,9 @@ func compareStoredDatabaseInfoWithFlags(dbInfo databaseInfo) (equal bool, messag
 	if dbInfo.Port != *dbPort {
 		differences = append(differences, fmt.Sprintf("stored db port %d != %d", dbInfo.Port, *dbPort))
 	}
+	if dbInfo.Schema != *dbSchema {
+		differences = append(differences, fmt.Sprintf("stored db schema %s != %s", dbInfo.Schema, *dbSchema))
+	}
 	if len(differences) > 0 {
 		message = strings.Join(differences, ".\n")
 	} else if len(differences) == 0 {

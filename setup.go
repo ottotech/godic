@@ -23,10 +23,9 @@ func runSetup(storage Repository) error {
 		equal, msg := compareStoredDatabaseInfoWithFlags(databaseInfo)
 		if !equal {
 			return fmt.Errorf("The flags provided do not match the ones stored in your "+
-				"database info.\nIf you are using the same database with different information "+
-				"you can run godic with the flag -update=true to update the info.\nOr if you want to "+
-				"remove completely the data dictionary of your previous database and start fresh you "+
-				"can run godic with the flag -force_delete=true (see documentation of this flag).\n\n"+
+				"database info.\nIf you want to remove completely the data dictionary of your "+
+				"previous database and start fresh you can run godic with the flag -force_delete=true "+
+				"(see documentation of this flag).\n"+
 				"Here some of the differences we found:\n%s", msg)
 		}
 		goto DoNothing
