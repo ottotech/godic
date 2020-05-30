@@ -115,10 +115,10 @@ func (fks ForeignKeys) get(colName string, tableName string) (foreignKey, error)
 
 // colAndEnum holds information about a column and its enum type.
 type colAndEnum struct {
-	Table     string
-	Col       string
-	EnumName  string
-	EnumValue string
+	Table      string
+	Col        string
+	EnumName   string
+	EnumValues string
 }
 
 // ColumnsAndEnums is a collection of columns with their corresponding enum types.

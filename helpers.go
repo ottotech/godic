@@ -83,7 +83,7 @@ func getColsAndEnums() (ColumnsAndEnums, error) {
 
 	for rows.Next() {
 		ce := colAndEnum{}
-		if err := rows.Scan(&ce.Table, &ce.Col, &ce.EnumName, &ce.EnumValue); err != nil {
+		if err := rows.Scan(&ce.Table, &ce.Col, &ce.EnumName, &ce.EnumValues); err != nil {
 			return ces, err
 		}
 		ces = append(ces, ce)
