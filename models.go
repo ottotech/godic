@@ -172,6 +172,6 @@ func (ucs UniqueCols) get(colName string, tbName string) (uniqueCol, error) {
 			return ucs[i], nil
 		}
 	}
-	return uniqueCol{}, errors.Errorf("there is no column with the given name %s and in the given table %s"+
-		" with a unique index.", colName, tbName)
+	return uniqueCol{}, errors.Errorf("there is no column with a unique index with the given name %s and in the "+
+		"given table %s.", colName, tbName)
 }
