@@ -9,13 +9,16 @@ import (
 func runSetup(storage Repository) error {
 	var err error
 
+	metaDataExists, err := storage.IsDatabaseMetaDataAdded(*dbName)
+	if err != nil {
+		return err
+	}
+
 	if *forceDelete {
 		goto DoForceDelete
 	}
 
-	if metaDataExists, err := storage.IsDatabaseMetaDataAdded(*dbName); err != nil {
-		return err
-	} else if metaDataExists {
+	if metaDataExists {
 		databaseInfo, err := storage.GetDatabaseInfo()
 		if err != nil {
 			return err
@@ -29,7 +32,9 @@ func runSetup(storage Repository) error {
 				"Here some of the differences we found:\n%s", msg)
 		}
 		goto DoNothing
-	} else if !metaDataExists {
+	}
+
+	if !metaDataExists {
 		databaseInfo, err := storage.GetDatabaseInfo()
 		if err != nil {
 			if err == ErrNoDatabaseMetaDataStored {
@@ -56,20 +61,20 @@ func runSetup(storage Repository) error {
 			databaseInfo.Driver,
 		)
 	}
-DoNothing:
-	return nil
-DoSetup:
-	err = databaseMetaDataSetup(storage)
-	if err != nil {
-		return err
-	}
-	return nil
 DoForceDelete:
 	err = storage.RemoveEverything()
 	if err != nil {
 		return err
 	}
 	goto DoSetup
+DoSetup:
+	err = databaseMetaDataSetup(storage)
+	if err != nil {
+		return err
+	}
+	return nil
+DoNothing:
+	return nil
 }
 
 // databaseMetaDataSetup stores in repository all the database metadata.
