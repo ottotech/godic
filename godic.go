@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
 	_ "github.com/lib/pq"
@@ -72,6 +73,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index())
+	mux.HandleFunc("/update-add-table-description", updateAddTableDescriptionHandler(storage))
+	mux.HandleFunc("/update-add-column-description", updateAddColumnDescriptionHandler(storage))
 	srv := http.Server{
 		Addr:    ":" + *port,
 		Handler: mux,
@@ -100,5 +103,65 @@ func index() http.HandlerFunc {
 			_logger.Println(err)
 			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 		}
+	}
+}
+
+func updateAddTableDescriptionHandler(repo Repository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
+			return
+		}
+
+		requestData := struct {
+			TableID     string `json:"table_id"`
+			Description string `json:"description"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&requestData)
+		if err != nil {
+			// error managed like 500 for simplicity.
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		err = repo.UpdateAddTableDescription(requestData.TableID, requestData.Description)
+		if err != nil {
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func updateAddColumnDescriptionHandler(repo Repository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
+			return
+		}
+
+		requestData := struct {
+			ColumnID    string `json:"column_id"`
+			Description string `json:"description"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&requestData)
+		if err != nil {
+			// error managed like 500 for simplicity.
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		err = repo.UpdateAddColumnDescription(requestData.ColumnID, requestData.Description)
+		if err != nil {
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 	}
 }

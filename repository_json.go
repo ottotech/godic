@@ -124,3 +124,31 @@ func (s *jsonStorage) RemoveEverything() error {
 	}
 	return nil
 }
+
+func (s *jsonStorage) UpdateAddTableDescription(tableID string, description string) error {
+	var t table
+	err := s.db.Read(collectionTable, tableID, &t)
+	if err != nil {
+		return err
+	}
+	t.Description = description
+	err = s.db.Write(collectionTable, tableID, t)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *jsonStorage) UpdateAddColumnDescription(columnID string, description string) error {
+	var c colMetaData
+	err := s.db.Read(collectionColumn, columnID, &c)
+	if err != nil {
+		return err
+	}
+	c.Description = description
+	err = s.db.Write(collectionColumn, columnID, c)
+	if err != nil {
+		return err
+	}
+	return nil
+}
