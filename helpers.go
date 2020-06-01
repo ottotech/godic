@@ -3,8 +3,33 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+// mysqlVars represents the information needed to make a connection with a mysql database.
+var mysqlVars = map[string]string{
+	"user":     "",
+	"password": "",
+	"host":     "",
+	"port":     "",
+	"database": "",
+}
+
+// formatMysqlSource formats the mysqlVars map into a valid dataSourceName url so we can connect to a mysql database.
+func formatMysqlSource() string {
+	mysqlVars["user"] = *dbUser
+	mysqlVars["password"] = *dbPassword
+	mysqlVars["host"] = *dbHost
+	mysqlVars["port"] = strconv.Itoa(*dbPort)
+	mysqlVars["database"] = *dbName
+	format := mysqlDbSource
+	for k, v := range mysqlVars {
+		format = strings.Replace(format, "{"+k+"}", v, -1)
+	}
+	return format
+}
+
 
 // parseNullableFromCol allows us to handle the *sql.ColumnType method Nullable().
 // If Nullable() fails parseNullableFromCol will gracefully return false.

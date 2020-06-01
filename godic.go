@@ -11,41 +11,18 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 )
 
 var DB *sql.DB
 var _logger *log.Logger
-
-const psqlDbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
-const mysqlDbSource string = "{user}:{password}@tcp({host}:{port})/{database}"
-
-var mysqlVars = map[string]string{
-	"user":     "",
-	"password": "",
-	"host":     "",
-	"port":     "",
-	"database": "",
-}
 
 var allowedDrivers = [2]string{
 	"mysql",
 	"postgres",
 }
 
-func formatMysqlSource() string {
-	mysqlVars["user"] = *dbUser
-	mysqlVars["password"] = *dbPassword
-	mysqlVars["host"] = *dbHost
-	mysqlVars["port"] = strconv.Itoa(*dbPort)
-	mysqlVars["database"] = *dbName
-	format := mysqlDbSource
-	for k, v := range mysqlVars {
-		format = strings.Replace(format, "{"+k+"}", v, -1)
-	}
-	return format
-}
+const psqlDbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
+const mysqlDbSource string = "{user}:{password}@tcp({host}:{port})/{database}"
 
 var (
 	port        = flag.String("server_port", "8080", "port used for http server")
@@ -72,13 +49,16 @@ func main() {
 			_logger.Println(err)
 		}
 	}()
+
 	flag.Parse()
+
 	source := ""
 	if *dbDriver == "mysql" {
 		source = formatMysqlSource()
 	} else if *dbDriver == "postgres" {
 		source = fmt.Sprintf(psqlDbSource, *dbUser, *dbPassword, *dbHost, *dbPort, *dbName)
 	}
+
 	storage, err := NewJsonStorage()
 	if err != nil {
 		panic(err)
