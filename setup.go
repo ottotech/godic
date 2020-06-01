@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/jimsmart/schema"
 	"strings"
 )
 
@@ -92,8 +91,7 @@ func databaseMetaDataSetup(storage Repository) error {
 	if err != nil {
 		return err
 	}
-
-	tableNames, err := schema.TableNames(DB)
+	tableNames, err := getTableNames()
 	if err != nil {
 		return err
 	}
@@ -125,7 +123,7 @@ func databaseMetaDataSetup(storage Repository) error {
 			return err
 		}
 
-		tableColumns, err := schema.Table(DB, tableNames[i])
+		tableColumns, err := getTableColumns(tableNames[i])
 		if err != nil {
 			return err
 		}
