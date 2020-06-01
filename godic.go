@@ -25,7 +25,7 @@ const psqlDbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmo
 const mysqlDbSource string = "{user}:{password}@tcp({host}:{port})/{database}"
 
 var (
-	port        = flag.String("server_port", "8080", "port used for http server")
+	serverPort  = flag.String("server_port", "8080", "port used for http server")
 	dbUser      = flag.String("db_user", "", "database user")
 	dbPassword  = flag.String("db_password", "", "database password")
 	dbHost      = flag.String("db_host", "", "database host")
@@ -92,7 +92,7 @@ func main() {
 	mux.HandleFunc("/update-add-table-description", updateAddTableDescriptionHandler(storage))
 	mux.HandleFunc("/update-add-column-description", updateAddColumnDescriptionHandler(storage))
 	srv := http.Server{
-		Addr:    ":" + *port,
+		Addr:    ":" + *serverPort,
 		Handler: mux,
 	}
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {

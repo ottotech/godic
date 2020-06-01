@@ -30,7 +30,6 @@ func formatMysqlSource() string {
 	return format
 }
 
-
 // parseNullableFromCol allows us to handle the *sql.ColumnType method Nullable().
 // If Nullable() fails parseNullableFromCol will gracefully return false.
 func parseNullableFromCol(col *sql.ColumnType) bool {
