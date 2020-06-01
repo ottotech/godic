@@ -30,6 +30,21 @@ func formatMysqlSource() string {
 	return format
 }
 
+// validateSqlDriver validates whether the given *dbDriver flag to manage the database is allowed or not.
+func validateSqlDriver() error {
+	allowed := false
+	for i := range allowedDrivers {
+		if *dbDriver == allowedDrivers[i] {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return fmt.Errorf("the given driver %s is not supported", *dbDriver)
+	}
+	return nil
+}
+
 // parseNullableFromCol allows us to handle the *sql.ColumnType method Nullable().
 // If Nullable() fails parseNullableFromCol will gracefully return false.
 func parseNullableFromCol(col *sql.ColumnType) bool {

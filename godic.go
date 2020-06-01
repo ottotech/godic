@@ -31,7 +31,7 @@ var (
 	dbHost      = flag.String("db_host", "", "database host")
 	dbPort      = flag.Int("db_port", 5432, "database port")
 	dbName      = flag.String("db_name", "", "database name")
-	dbDriver    = flag.String("db_driver", "postgres", "database driver")
+	dbDriver    = flag.String("db_driver", "", "database driver")
 	dbSchema    = flag.String("db_schema", "public", "database schema for search_path")
 	forceDelete = flag.Bool("force_delete", false, "deletes completely any stored metadata of a database in order to start fresh")
 )
@@ -51,6 +51,10 @@ func main() {
 	}()
 
 	flag.Parse()
+
+	if err := validateSqlDriver(); err != nil {
+		log.Fatalln(err)
+	}
 
 	source := ""
 	if *dbDriver == "mysql" {
