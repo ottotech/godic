@@ -118,7 +118,7 @@ func (s *jsonStorage) GetDatabaseInfo() (databaseInfo, error) {
 }
 
 func (s *jsonStorage) RemoveEverything() error {
-	err := os.RemoveAll("./data/")
+	err := os.RemoveAll(dir)
 	if err != nil {
 		return err
 	}
