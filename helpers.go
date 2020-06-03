@@ -17,12 +17,12 @@ var mysqlVars = map[string]string{
 }
 
 // formatMysqlSource formats the mysqlVars map into a valid dataSourceName url so we can connect to a mysql database.
-func formatMysqlSource() string {
-	mysqlVars["user"] = *dbUser
-	mysqlVars["password"] = *dbPassword
-	mysqlVars["host"] = *dbHost
-	mysqlVars["port"] = strconv.Itoa(*dbPort)
-	mysqlVars["database"] = *dbName
+func formatMysqlSource(conf *Config) string {
+	mysqlVars["user"] = conf.DatabaseUser
+	mysqlVars["password"] = conf.DatabasePassword
+	mysqlVars["host"] = conf.DatabaseHost
+	mysqlVars["port"] = strconv.Itoa(conf.DatabasePort)
+	mysqlVars["database"] = conf.DatabaseName
 	format := mysqlDbSource
 	for k, v := range mysqlVars {
 		format = strings.Replace(format, "{"+k+"}", v, -1)
@@ -31,16 +31,16 @@ func formatMysqlSource() string {
 }
 
 // validateSqlDriver validates whether the given *dbDriver flag to manage the database is allowed or not.
-func validateSqlDriver() error {
+func validateSqlDriver(conf *Config) error {
 	allowed := false
 	for i := range allowedDrivers {
-		if *dbDriver == allowedDrivers[i] {
+		if conf.DatabaseDriver == allowedDrivers[i] {
 			allowed = true
 			break
 		}
 	}
 	if !allowed {
-		return fmt.Errorf("the given driver %s is not supported", *dbDriver)
+		return fmt.Errorf("the given driver %s is not supported", conf.DatabaseDriver)
 	}
 	return nil
 }
@@ -66,14 +66,14 @@ func parseLengthFromCol(col *sql.ColumnType) int64 {
 }
 
 // getTableNames will get all table names of the database.
-func getTableNames() ([]string, error) {
+func getTableNames(conf *Config) ([]string, error) {
 	tableNames := make([]string, 0)
 	q := fmt.Sprintf(`
 		SELECT TABLE_NAME as table_name
 		FROM   information_schema.tables 
 		WHERE  TABLE_TYPE = 'BASE TABLE'
 			   AND TABLE_SCHEMA = '%s';
-	`, *dbSchema)
+	`, conf.DatabaseSchema)
 
 	rows, err := DB.Query(q)
 	if err != nil {
@@ -97,12 +97,12 @@ func getTableNames() ([]string, error) {
 }
 
 // getTableColumns will get all the columns of the given table as *sql.ColumnType.
-func getTableColumns(tableName string) ([]*sql.ColumnType, error) {
+func getTableColumns(tableName string, conf *Config) ([]*sql.ColumnType, error) {
 	var q string
 
-	if *dbDriver == "postgres" {
+	if conf.DatabaseDriver == "postgres" {
 		q = fmt.Sprintf(psqlQueryGetColumns, tableName)
-	} else if *dbDriver == "mysql" {
+	} else if conf.DatabaseDriver == "mysql" {
 		q = fmt.Sprintf(mysqlQueryGetColumns, tableName)
 	}
 
@@ -116,13 +116,13 @@ func getTableColumns(tableName string) ([]*sql.ColumnType, error) {
 }
 
 // getPrimaryKeys will get all columns of the database tables that are primary keys.
-func getPrimaryKeys() (PrimaryKeys, error) {
+func getPrimaryKeys(conf *Config) (PrimaryKeys, error) {
 	pks := make(PrimaryKeys, 0)
 	var q string
 
-	if *dbDriver == "mysql" {
-		q = mysqlQueryGetPks
-	} else if *dbDriver == "postgres" {
+	if conf.DatabaseDriver == "mysql" {
+		q = fmt.Sprintf(mysqlQueryGetPks, conf.DatabaseSchema)
+	} else if conf.DatabaseDriver == "postgres" {
 		q = psqlQueryGetPKs
 	}
 
@@ -148,13 +148,13 @@ func getPrimaryKeys() (PrimaryKeys, error) {
 }
 
 // getForeignKeys will get all columns of the DB tables that are foreign keys.
-func getForeignKeys() (ForeignKeys, error) {
+func getForeignKeys(conf *Config) (ForeignKeys, error) {
 	fks := make(ForeignKeys, 0)
 	var q string
 
-	if *dbDriver == "mysql" {
-		q = mysqlQueryGetFKs
-	} else if *dbDriver == "postgres" {
+	if conf.DatabaseDriver == "mysql" {
+		q = fmt.Sprintf(mysqlQueryGetFKs, conf.DatabaseSchema)
+	} else if conf.DatabaseDriver == "postgres" {
 		q = psqlQueryGetFKs
 	}
 
@@ -180,13 +180,13 @@ func getForeignKeys() (ForeignKeys, error) {
 }
 
 // getColsAndEnums will get all columns and their corresponding enum types from DB.
-func getColsAndEnums() (ColumnsAndEnums, error) {
+func getColsAndEnums(conf *Config) (ColumnsAndEnums, error) {
 	ces := make(ColumnsAndEnums, 0)
 	var q string
 
-	if *dbDriver == "mysql" {
-		q = mysqlQueryEnumTypesAndCols
-	} else if *dbDriver == "postgres" {
+	if conf.DatabaseDriver == "mysql" {
+		q = fmt.Sprintf(mysqlQueryEnumTypesAndCols, conf.DatabaseSchema)
+	} else if conf.DatabaseDriver == "postgres" {
 		q = psqlQueryEnumTypesAndCols
 	}
 
@@ -212,14 +212,14 @@ func getColsAndEnums() (ColumnsAndEnums, error) {
 }
 
 // getUniqueCols will get all columns of tables in the database that have a unique index.
-func getUniqueCols() (UniqueCols, error) {
+func getUniqueCols(conf *Config) (UniqueCols, error) {
 	ucs := make(UniqueCols, 0)
 	var q string
 
-	if *dbDriver == "mysql" {
-		q = mysqlQueryGetUniquesColumns
-	} else if *dbDriver == "postgres" {
-		q = psqlQueryGetUniquesColumns
+	if conf.DatabaseDriver == "mysql" {
+		q = fmt.Sprintf(mysqlQueryGetUniquesColumns, conf.DatabaseSchema)
+	} else if conf.DatabaseDriver == "postgres" {
+		q = fmt.Sprintf(psqlQueryGetUniquesColumns, conf.DatabaseSchema)
 	}
 
 	rows, err := DB.Query(q)
@@ -243,31 +243,31 @@ func getUniqueCols() (UniqueCols, error) {
 	return ucs, nil
 }
 
-// compareStoredDatabaseInfoWithFlags is a helper function that checks if the
-// stored database info matches the flags passed when running the application.
+// compareStoredDatabaseInfoWithConfig is a helper function that checks if the
+// stored database info matches the configuration passed when running the application.
 // If there is no match we might tell the client to use the -force_delete flag.
-func compareStoredDatabaseInfoWithFlags(dbInfo databaseInfo) (equal bool, message string) {
+func compareStoredDatabaseInfoWithConf(dbInfo databaseInfo, conf *Config) (equal bool, message string) {
 	differences := make([]string, 0)
-	if dbInfo.User != *dbUser {
-		differences = append(differences, fmt.Sprintf("stored user %s != %s", dbInfo.User, *dbUser))
+	if dbInfo.User != conf.DatabaseUser {
+		differences = append(differences, fmt.Sprintf("stored user %s != %s", dbInfo.User, conf.DatabaseUser))
 	}
-	if dbInfo.Password != *dbPassword {
-		differences = append(differences, fmt.Sprintf("stored db password %s != %s", dbInfo.Password, *dbPassword))
+	if dbInfo.Password != conf.DatabasePassword {
+		differences = append(differences, fmt.Sprintf("stored db password %s != %s", dbInfo.Password, conf.DatabasePassword))
 	}
-	if dbInfo.Name != *dbName {
-		differences = append(differences, fmt.Sprintf("stored db name %s != %s", dbInfo.Name, *dbName))
+	if dbInfo.Name != conf.DatabaseName {
+		differences = append(differences, fmt.Sprintf("stored db name %s != %s", dbInfo.Name, conf.DatabaseName))
 	}
-	if dbInfo.Driver != *dbDriver {
-		differences = append(differences, fmt.Sprintf("stored db driver %s != %s", dbInfo.Driver, *dbDriver))
+	if dbInfo.Driver != conf.DatabaseDriver {
+		differences = append(differences, fmt.Sprintf("stored db driver %s != %s", dbInfo.Driver, conf.DatabaseDriver))
 	}
-	if dbInfo.Host != *dbHost {
-		differences = append(differences, fmt.Sprintf("stored db host %s != %s", dbInfo.Host, *dbHost))
+	if dbInfo.Host != conf.DatabaseHost {
+		differences = append(differences, fmt.Sprintf("stored db host %s != %s", dbInfo.Host, conf.DatabaseHost))
 	}
-	if dbInfo.Port != *dbPort {
-		differences = append(differences, fmt.Sprintf("stored db port %d != %d", dbInfo.Port, *dbPort))
+	if dbInfo.Port != conf.DatabasePort {
+		differences = append(differences, fmt.Sprintf("stored db port %d != %d", dbInfo.Port, conf.DatabasePort))
 	}
-	if dbInfo.Schema != *dbSchema {
-		differences = append(differences, fmt.Sprintf("stored db schema %s != %s", dbInfo.Schema, *dbSchema))
+	if dbInfo.Schema != conf.DatabaseSchema {
+		differences = append(differences, fmt.Sprintf("stored db schema %s != %s", dbInfo.Schema, conf.DatabaseSchema))
 	}
 
 	if len(differences) > 0 {
@@ -288,7 +288,7 @@ var psqlQueryGetPKs = `
 	WHERE  tc.constraint_type = 'PRIMARY KEY'; 
 `
 
-var mysqlQueryGetPks = fmt.Sprintf(`
+var mysqlQueryGetPks = `
 	SELECT sta.column_name, 
 		   tab.table_name 
 	FROM   information_schema.tables AS tab 
@@ -298,7 +298,7 @@ var mysqlQueryGetPks = fmt.Sprintf(`
 					  AND sta.index_name = 'primary' 
 	WHERE  tab.table_schema = '%s' 
 	ORDER  BY tab.table_name;
-`, *dbSchema)
+`
 
 var psqlQueryGetFKs = `
 	SELECT cu.table_name  AS origin_table_name, 
@@ -316,7 +316,7 @@ var psqlQueryGetFKs = `
 	WHERE  tc.constraint_type = 'FOREIGN KEY'; 
 `
 
-var mysqlQueryGetFKs = fmt.Sprintf(`
+var mysqlQueryGetFKs = `
 	SELECT rf.table_name            AS origin_table_name, 
 		   rf.referenced_table_name AS target_table_name, 
 		   kcu.column_name, 
@@ -328,7 +328,7 @@ var mysqlQueryGetFKs = fmt.Sprintf(`
 		   JOIN information_schema.key_column_usage AS kcu 
 			 ON kcu.constraint_name = tc.constraint_name 
 	WHERE  rf.constraint_schema = '%s'; 
-`, *dbSchema)
+`
 
 var psqlQueryEnumTypesAndCols = `
 	SELECT isc.table_name, 
@@ -347,7 +347,7 @@ var psqlQueryEnumTypesAndCols = `
 			  isc.table_name; 
 `
 
-var mysqlQueryEnumTypesAndCols = fmt.Sprintf(`
+var mysqlQueryEnumTypesAndCols = `
 	SELECT col.table_name  AS table_name, 
 		   col.column_name AS column_name, 
 		   col.data_type   AS enum_type, 
@@ -355,9 +355,9 @@ var mysqlQueryEnumTypesAndCols = fmt.Sprintf(`
 	FROM   information_schema.columns AS col 
 	WHERE  col.data_type = 'enum' 
 		   AND col.table_schema = '%s'; 
-`, *dbSchema)
+`
 
-var psqlQueryGetUniquesColumns = fmt.Sprintf(`
+var psqlQueryGetUniquesColumns = `
 	SELECT tbl.relname                     AS table_name, 
 		   pga.attname                     AS column_name, 
 		   Pg_get_indexdef(pgi.indexrelid) AS definition 
@@ -372,9 +372,9 @@ var psqlQueryGetUniquesColumns = fmt.Sprintf(`
 			 ON pga.attrelid = pgc.oid 
 	WHERE  pgi.indisunique = true 
 		   AND pgn.nspname = '%s'; 
-`, *dbSchema)
+`
 
-var mysqlQueryGetUniquesColumns = fmt.Sprintf(`
+var mysqlQueryGetUniquesColumns = `
 	SELECT DISTINCT kcu.table_name  AS table_name, 
 					kcu.column_name AS column_name, 
 					''              AS definition 
@@ -385,7 +385,7 @@ var mysqlQueryGetUniquesColumns = fmt.Sprintf(`
 											  AS tc 
 									   WHERE  tc.constraint_type = 'UNIQUE' 
 											  AND tc.table_schema = '%[1]s');
-`, *dbSchema)
+`
 
 var mysqlQueryGetColumns = "SELECT * FROM `%s` LIMIT 0;"
 var psqlQueryGetColumns = "SELECT * FROM %q LIMIT 0;"

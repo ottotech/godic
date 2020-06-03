@@ -5,15 +5,15 @@ import (
 	"strings"
 )
 
-func runSetup(storage Repository) error {
+func setupInitialMetadata(storage Repository, conf *Config) error {
 	var err error
 
-	metaDataExists, err := storage.IsDatabaseMetaDataAdded(*dbName)
+	metaDataExists, err := storage.IsDatabaseMetaDataAdded(conf.DatabaseName)
 	if err != nil {
 		return err
 	}
 
-	if *forceDelete {
+	if conf.ForceDelete {
 		goto DoForceDelete
 	}
 
@@ -22,7 +22,7 @@ func runSetup(storage Repository) error {
 		if err != nil {
 			return err
 		}
-		equal, msg := compareStoredDatabaseInfoWithFlags(databaseInfo)
+		equal, msg := compareStoredDatabaseInfoWithConf(databaseInfo, conf)
 		if !equal {
 			return fmt.Errorf("The flags provided do not match the ones stored in your "+
 				"database info.\nIf you want to remove completely the data dictionary of your "+
@@ -67,7 +67,7 @@ DoForceDelete:
 	}
 	goto DoSetup
 DoSetup:
-	err = databaseMetaDataSetup(storage)
+	err = databaseMetaDataSetup(storage, conf)
 	if err != nil {
 		return err
 	}
@@ -77,41 +77,41 @@ DoNothing:
 }
 
 // databaseMetaDataSetup stores in repository all the database metadata.
-func databaseMetaDataSetup(storage Repository) error {
+func databaseMetaDataSetup(storage Repository, conf *Config) error {
 	dbInfo := databaseInfo{
-		Name:     *dbName,
-		User:     *dbUser,
-		Host:     *dbHost,
-		Port:     *dbPort,
-		Password: *dbPassword,
-		Driver:   *dbDriver,
-		Schema:   *dbSchema,
+		Name:     conf.DatabaseName,
+		User:     conf.DatabaseUser,
+		Host:     conf.DatabaseHost,
+		Port:     conf.DatabasePort,
+		Password: conf.DatabasePassword,
+		Driver:   conf.DatabaseDriver,
+		Schema:   conf.DatabaseSchema,
 	}
 	err := storage.AddDatabaseInfo(dbInfo)
 	if err != nil {
 		return err
 	}
-	tableNames, err := getTableNames()
+	tableNames, err := getTableNames(conf)
 	if err != nil {
 		return err
 	}
 
-	primaryKeys, err := getPrimaryKeys()
+	primaryKeys, err := getPrimaryKeys(conf)
 	if err != nil {
 		return err
 	}
 
-	foreignKeys, err := getForeignKeys()
+	foreignKeys, err := getForeignKeys(conf)
 	if err != nil {
 		return err
 	}
 
-	enums, err := getColsAndEnums()
+	enums, err := getColsAndEnums(conf)
 	if err != nil {
 		return err
 	}
 
-	uniques, err := getUniqueCols()
+	uniques, err := getUniqueCols(conf)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func databaseMetaDataSetup(storage Repository) error {
 			return err
 		}
 
-		tableColumns, err := getTableColumns(tableNames[i])
+		tableColumns, err := getTableColumns(tableNames[i], conf)
 		if err != nil {
 			return err
 		}

@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 var DB *sql.DB
@@ -23,18 +24,6 @@ var allowedDrivers = [2]string{
 
 const psqlDbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
 const mysqlDbSource string = "{user}:{password}@tcp({host}:{port})/{database}"
-
-var (
-	serverPort  = flag.String("server_port", "8080", "port used for http server")
-	dbUser      = flag.String("db_user", "", "database user")
-	dbPassword  = flag.String("db_password", "", "database password")
-	dbHost      = flag.String("db_host", "", "database host")
-	dbPort      = flag.Int("db_port", 5432, "database port")
-	dbName      = flag.String("db_name", "", "database name")
-	dbDriver    = flag.String("db_driver", "", "database driver")
-	dbSchema    = flag.String("db_schema", "public", "database schema for search_path")
-	forceDelete = flag.Bool("force_delete", false, "deletes completely any stored metadata of a database in order to start fresh")
-)
 
 func main() {
 	logFile, err := os.OpenFile("./error.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -49,18 +38,31 @@ func main() {
 			_logger.Println(err)
 		}
 	}()
+	conf, output, err := ParseFlags(os.Args[0], os.Args[1:])
+	if err == flag.ErrHelp {
+		fmt.Println(output)
+		os.Exit(2)
+	} else if err != nil {
+		fmt.Println("output:\n", output)
+		os.Exit(1)
+	}
 
-	flag.Parse()
-
-	if err := validateSqlDriver(); err != nil {
+	err = run(conf)
+	if err != nil {
 		log.Fatalln(err)
+	}
+}
+
+func run(conf *Config) error {
+	if err := validateSqlDriver(conf); err != nil {
+		return err
 	}
 
 	source := ""
-	if *dbDriver == "mysql" {
-		source = formatMysqlSource()
-	} else if *dbDriver == "postgres" {
-		source = fmt.Sprintf(psqlDbSource, *dbUser, *dbPassword, *dbHost, *dbPort, *dbName)
+	if conf.DatabaseDriver == "mysql" {
+		source = formatMysqlSource(conf)
+	} else if conf.DatabaseDriver == "postgres" {
+		source = fmt.Sprintf(psqlDbSource, conf.DatabaseUser, conf.DatabasePassword, conf.DatabaseHost, conf.DatabasePort, conf.DatabaseName)
 	}
 
 	storage, err := NewJsonStorage()
@@ -68,7 +70,7 @@ func main() {
 		panic(err)
 	}
 
-	db, err := sql.Open(*dbDriver, source)
+	db, err := sql.Open(conf.DatabaseDriver, source)
 	if err != nil {
 		panic(err)
 	}
@@ -77,18 +79,18 @@ func main() {
 	}
 
 	DB = db
-	log.Println("You connected to your database: ", *dbName)
+	log.Println("You connected to your database: ", conf.DatabaseName)
 
-	if *dbDriver == "postgres" {
-		_, err = DB.Exec(fmt.Sprintf("SET search_path=%s", *dbSchema))
+	if conf.DatabaseDriver == "postgres" {
+		_, err = DB.Exec(fmt.Sprintf("SET search_path=%s", conf.DatabaseSchema))
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	err = runSetup(storage)
+	err = setupInitialMetadata(storage, conf)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	mux := http.NewServeMux()
@@ -96,12 +98,14 @@ func main() {
 	mux.HandleFunc("/update-add-table-description", updateAddTableDescriptionHandler(storage))
 	mux.HandleFunc("/update-add-column-description", updateAddColumnDescriptionHandler(storage))
 	srv := http.Server{
-		Addr:    ":" + *serverPort,
+		Addr:    ":" + strconv.Itoa(conf.ServerPort),
 		Handler: mux,
 	}
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		_logger.Println(err)
 	}
+
+	return nil
 }
 
 func index() http.HandlerFunc {
