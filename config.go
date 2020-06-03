@@ -5,6 +5,7 @@ import (
 	"flag"
 )
 
+// Config holds the different configuration options of the database as well as some option for the godic app.
 type Config struct {
 	ServerPort       int    `json:"server_port"`
 	DatabaseUser     string `json:"database_user"`
@@ -17,6 +18,7 @@ type Config struct {
 	ForceDelete      bool   `json:"force_delete"`
 }
 
+// ParseFlags parses the
 func ParseFlags(programName string, args []string) (config *Config, output string, err error) {
 	flags := flag.NewFlagSet(programName, flag.ContinueOnError)
 	var buf bytes.Buffer

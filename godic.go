@@ -62,7 +62,8 @@ func run(conf *Config) error {
 	if conf.DatabaseDriver == "mysql" {
 		source = formatMysqlSource(conf)
 	} else if conf.DatabaseDriver == "postgres" {
-		source = fmt.Sprintf(psqlDbSource, conf.DatabaseUser, conf.DatabasePassword, conf.DatabaseHost, conf.DatabasePort, conf.DatabaseName)
+		source = fmt.Sprintf(psqlDbSource, conf.DatabaseUser, conf.DatabasePassword, conf.DatabaseHost,
+			conf.DatabasePort, conf.DatabaseName)
 	}
 
 	storage, err := NewJsonStorage()
@@ -103,6 +104,7 @@ func run(conf *Config) error {
 	}
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		_logger.Println(err)
+		return err
 	}
 
 	return nil
