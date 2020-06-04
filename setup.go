@@ -163,12 +163,7 @@ func databaseMetaDataSetup(storage Repository, conf *Config) error {
 			}
 
 			if hasUniqueIndex := uniques.exists(colMeta.Name, tableNames[i]); hasUniqueIndex {
-				uCol, err := uniques.get(colMeta.Name, tableNames[i])
-				if err != nil {
-					return err
-				}
 				colMeta.IsUnique = true
-				colMeta.UniqueIndexDefinition = uCol.UniqueDefinition
 			}
 
 			err = storage.AddColMetaData(tableNames[i], colMeta)

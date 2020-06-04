@@ -146,11 +146,10 @@ func (ces ColumnsAndEnums) get(colName string, tableName string) (colAndEnum, er
 	return colAndEnum{}, errors.Errorf("there is no column %s in table %s with an enum type.", colName, tableName)
 }
 
-// uniqueCol holds information about a column with an unique index.
+// uniqueCol holds columns with an unique index.
 type uniqueCol struct {
 	Table            string
 	Col              string
-	UniqueDefinition string
 }
 
 // UniqueCols is a collection of columns with unique indexes.

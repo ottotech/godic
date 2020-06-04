@@ -353,3 +353,22 @@ func Test_getColsAndEnums_helper_func(t *testing.T) {
 		t.Errorf("expected enum %+v; got %+v", expectedEnum, enums[0])
 	}
 }
+
+func Test_getUniqueCols_helper_func(t *testing.T) {
+	originalDB := DB
+	DB = psqlTestDb
+	defer func(original *sql.DB) {
+		DB = original
+	}(originalDB)
+
+	conf := createConf()
+
+	uniqueColumns, err := getUniqueCols(conf)
+	if err != nil {
+		t.Fatalf("we shouldn't get an error when calling getUniqueCols; got %s", err)
+	}
+
+	if len(uniqueColumns) != 4 {
+		t.Errorf("we expected 4 unique columns got %d", len(uniqueColumns))
+	}
+}

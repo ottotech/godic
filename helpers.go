@@ -230,7 +230,7 @@ func getUniqueCols(conf *Config) (UniqueCols, error) {
 
 	for rows.Next() {
 		uc := uniqueCol{}
-		if err := rows.Scan(&uc.Table, &uc.Col, &uc.UniqueDefinition); err != nil {
+		if err := rows.Scan(&uc.Table, &uc.Col); err != nil {
 			return ucs, err
 		}
 		ucs = append(ucs, uc)
@@ -358,9 +358,9 @@ var mysqlQueryEnumTypesAndCols = `
 `
 
 var psqlQueryGetUniquesColumns = `
-	SELECT tbl.relname                     AS table_name, 
-		   pga.attname                     AS column_name, 
-		   Pg_get_indexdef(pgi.indexrelid) AS definition 
+	SELECT DISTINCT 
+           tbl.relname                     AS table_name, 
+		   pga.attname                     AS column_name
 	FROM   pg_index AS pgi 
 		   JOIN pg_class AS pgc 
 			 ON pgc.oid = pgi.indexrelid 
@@ -376,8 +376,7 @@ var psqlQueryGetUniquesColumns = `
 
 var mysqlQueryGetUniquesColumns = `
 	SELECT DISTINCT kcu.table_name  AS table_name, 
-					kcu.column_name AS column_name, 
-					''              AS definition 
+					kcu.column_name AS column_name
 	FROM   information_schema.key_column_usage AS kcu 
 	WHERE  kcu.table_schema = '%[1]s' 
 		   AND kcu.constraint_name IN (SELECT tc.constraint_name 
