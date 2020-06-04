@@ -274,7 +274,7 @@ func Test_getPrimaryKeys(t *testing.T) {
 	}
 }
 
-func Test_getForeignKeys(t *testing.T) {
+func Test_getForeignKeys_helper_func(t *testing.T) {
 	originalDB := DB
 	DB = psqlTestDb
 	defer func(original *sql.DB) {
@@ -321,5 +321,35 @@ func Test_getForeignKeys(t *testing.T) {
 		if !exists {
 			t.Errorf("expected fk %s in table %s", e.Col, e.Table)
 		}
+	}
+}
+
+func Test_getColsAndEnums_helper_func(t *testing.T) {
+	originalDB := DB
+	DB = psqlTestDb
+	defer func(original *sql.DB) {
+		DB = original
+	}(originalDB)
+
+	conf := createConf()
+
+	enums, err := getColsAndEnums(conf)
+	if err != nil {
+		t.Fatalf("we shouldn't get an error when calling getColsAndEnums; got %s", err)
+	}
+
+	if len(enums) != 1 {
+		t.Errorf("expected to have 1 enum only; got %d", len(enums))
+	}
+
+	expectedEnum := colAndEnum{
+		Table:      "product",
+		Col:        "counting_option",
+		EnumName:   "counting_option",
+		EnumValues: "unit, decimal",
+	}
+
+	if !reflect.DeepEqual(expectedEnum, enums[0]) {
+		t.Errorf("expected enum %+v; got %+v", expectedEnum, enums[0])
 	}
 }
