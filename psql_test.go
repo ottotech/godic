@@ -66,17 +66,21 @@ func createPsqlDatabase() error {
 		  ON "order" (id); 
 	`
 	q2 := `
+		CREATE TYPE counting_option AS enum ('unit', 'decimal'); 
+	`
+	q3 := `
 		CREATE TABLE product 
 		  ( 
 			 id   SERIAL NOT NULL CONSTRAINT product_pk PRIMARY KEY, 
-			 name VARCHAR(200) NOT NULL 
+			 name VARCHAR(200) NOT NULL,
+             counting_option counting_option NOT NULL
 		  ); 
 	
 		CREATE UNIQUE INDEX product_id_uindex ON product (id);
 	
 		CREATE UNIQUE INDEX product_name_uindex ON product (name);
 	`
-	q3 := `
+	q4 := `
 		CREATE TABLE order_line 
 		  ( 
 			 id         SERIAL NOT NULL CONSTRAINT order_line_pk PRIMARY KEY, 
@@ -97,7 +101,7 @@ func createPsqlDatabase() error {
 		return err
 	}
 
-	for _, q := range []string{q1, q2, q3} {
+	for _, q := range []string{q1, q2, q3, q4} {
 		_, err = tx.Exec(q)
 		if err != nil {
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
@@ -199,7 +203,7 @@ func Test_getTableColumns_helpers_func(t *testing.T) {
 	// A map of tables (keys) and its columns (values as list of columns)
 	expectations := map[string][]string{
 		"order":      {"id"},
-		"product":    {"id", "name"},
+		"product":    {"id", "name", "counting_option"},
 		"order_line": {"id", "order_id"},
 	}
 
@@ -318,5 +322,4 @@ func Test_getForeignKeys(t *testing.T) {
 			t.Errorf("expected fk %s in table %s", e.Col, e.Table)
 		}
 	}
-
 }
