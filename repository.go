@@ -15,7 +15,7 @@ type Repository interface {
 type Setup interface {
 	AddDatabaseInfo(databaseInfo) error
 	AddTable(table) error
-	AddColMetaData(tableName string, col colMetaData) error
+	AddColMetaData(tableName string, col colMetadata) error
 	RemoveEverything() error
 	IsDatabaseMetaDataAdded(databaseName string) (bool, error)
 }

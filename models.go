@@ -39,8 +39,8 @@ func (t Tables) get(tableName string) (table, error) {
 	return table{}, errors.Errorf("there is no table with the given name %s", tableName)
 }
 
-// colMetaData holds metadata about a column in a table from the database.
-type colMetaData struct {
+// colMetadata holds metadata about a column in a table from the database.
+type colMetadata struct {
 	ID            string   `json:"id"`
 	Name          string   `json:"name"`
 	DBType        string   `json:"db_type"`
@@ -59,6 +59,9 @@ type colMetaData struct {
 	ENUMValues    []string `json:"enum_values"`
 	IsUnique      bool     `json:"is_unique"`
 }
+
+// ColumnsMetadata is a collection of colMetadata.
+
 
 // primaryKey holds information about a primary key.
 type primaryKey struct {

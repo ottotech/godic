@@ -135,7 +135,7 @@ func databaseMetaDataSetup(storage Repository, conf *Config) error {
 		}
 
 		for _, col := range tableColumns {
-			colMeta := colMetaData{}
+			colMeta := colMetadata{}
 			colMeta.Name = col.Name()
 			colMeta.DBType = col.DatabaseTypeName()
 			colMeta.Nullable = parseNullableFromCol(col)

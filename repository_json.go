@@ -70,7 +70,7 @@ func (s *jsonStorage) AddTable(t table) error {
 	return nil
 }
 
-func (s *jsonStorage) AddColMetaData(tableName string, col colMetaData) error {
+func (s *jsonStorage) AddColMetaData(tableName string, col colMetadata) error {
 	ss, err := s.db.ReadAll(collectionColumn)
 	if err != nil && !os.IsNotExist(err) {
 		return errors.Errorf("got error while trying to add column meta data of column %s in table %s; %s",
@@ -140,7 +140,7 @@ func (s *jsonStorage) UpdateAddTableDescription(tableID string, description stri
 }
 
 func (s *jsonStorage) UpdateAddColumnDescription(columnID string, description string) error {
-	var c colMetaData
+	var c colMetadata
 	err := s.db.Read(collectionColumn, columnID, &c)
 	if err != nil {
 		return err
