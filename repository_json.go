@@ -152,3 +152,20 @@ func (s *jsonStorage) UpdateAddColumnDescription(columnID string, description st
 	}
 	return nil
 }
+
+func (s *jsonStorage) GetColumns() (ColumnsMetadata, error) {
+	columns := make(ColumnsMetadata, 0)
+	list, err := s.db.ReadAll(collectionColumn)
+	if err != nil {
+		return columns, err
+	}
+	for i := range list {
+		var c colMetadata
+		err := json.Unmarshal([]byte(list[i]), &c)
+		if err != nil {
+			return columns, err
+		}
+		columns = append(columns, c)
+	}
+	return columns, nil
+}

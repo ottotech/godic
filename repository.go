@@ -8,8 +8,9 @@ type Repository interface {
 	Setup
 	UpdateAddTableDescription(tableID string, description string) error
 	UpdateAddColumnDescription(columnID string, description string) error
-	GetTables() (Tables, error)
 	GetDatabaseInfo() (databaseInfo, error)
+	GetTables() (Tables, error)
+	GetColumns() (ColumnsMetadata, error)
 }
 
 type Setup interface {

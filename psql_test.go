@@ -410,7 +410,7 @@ func Test_databaseMetaDataSetup_AND_some_repository_methods(t *testing.T) {
 	}(originalDB)
 
 	conf := createConf()
-	conf.ForceDelete = true // for testing we force delete
+	conf.ForceDelete = true // for testing we force delete of the data in the database.
 
 	storage, err := NewJsonStorage()
 	if err != nil {
@@ -419,7 +419,7 @@ func Test_databaseMetaDataSetup_AND_some_repository_methods(t *testing.T) {
 
 	// Test setup.
 
-	err = databaseMetaDataSetup(storage, conf)
+	err = setupInitialMetadata(storage, conf)
 	if err != nil {
 		t.Fatalf("we shouldn't get an error from databaseMetaDataSetup; got %s", err)
 	}
@@ -486,5 +486,14 @@ func Test_databaseMetaDataSetup_AND_some_repository_methods(t *testing.T) {
 	if updatedTable.Description != "I am a cool table." {
 		t.Errorf("expected tables description to be (%s); got %s instead", "I am a cool table.",
 			updatedTable.Description)
+	}
+
+	columns, err := storage.GetColumns()
+	if err != nil {
+		t.Fatalf("we shouldn't get an error from GetColumns; got %s", err)
+	}
+
+	if len(columns) != 7 {
+		t.Fatalf("expected 7 columns got %d", len(columns))
 	}
 }

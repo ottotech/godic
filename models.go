@@ -61,7 +61,18 @@ type colMetadata struct {
 }
 
 // ColumnsMetadata is a collection of colMetadata.
+type ColumnsMetadata []colMetadata
 
+// get will get the column metadata with the given colName in the given tableName.
+// If the column does not exist get() will return an error.
+func (cols ColumnsMetadata) get(colName string, tableName string) (colMetadata, error) {
+	for i := range cols {
+		if cols[i].Name == colName && cols[i].TBName == tableName {
+			return cols[i], nil
+		}
+	}
+	return colMetadata{}, errors.Errorf("column with name %s in the given table %s does not exist", colName, tableName)
+}
 
 // primaryKey holds information about a primary key.
 type primaryKey struct {
