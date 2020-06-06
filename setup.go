@@ -87,10 +87,12 @@ func databaseMetaDataSetup(storage Repository, conf *Config) error {
 		Driver:   conf.DatabaseDriver,
 		Schema:   conf.DatabaseSchema,
 	}
+
 	err := storage.AddDatabaseInfo(dbInfo)
 	if err != nil {
 		return err
 	}
+
 	tableNames, err := getTableNames(conf)
 	if err != nil {
 		return err
@@ -180,5 +182,6 @@ func databaseMetaDataSetup(storage Repository, conf *Config) error {
 			}
 		}
 	}
+
 	return nil
 }
