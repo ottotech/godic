@@ -13,27 +13,27 @@ import (
 var psqlTestDb *sql.DB
 
 const (
-	testDatabaseName     = "test_db"
-	testDatabasePassword = "secret"
-	testDatabasePort     = 5555
-	testDatabaseUser     = "test"
-	testDatabaseHost     = "localhost"
-	testDatabaseDriver   = "postgres"
-	testDatabaseSchema   = "public"
+	testPsqlDatabaseName     = "test_db"
+	testPsqlDatabasePassword = "secret"
+	testPsqlDatabasePort     = 5555
+	testPsqlDatabaseUser     = "test"
+	testPsqlDatabaseHost     = "localhost"
+	testPsqlDatabaseDriver   = "postgres"
+	testPsqlDatabaseSchema   = "public"
 )
 
 var psqlDatabaseUri = "user=test password=secret host=localhost port=5555 dbname=%s sslmode=disable"
 
-func createConf() *Config {
+func createPsqlConf() *Config {
 	return &Config{
 		ServerPort:       0000,
-		DatabaseUser:     testDatabaseUser,
-		DatabasePassword: testDatabasePassword,
-		DatabaseHost:     testDatabaseHost,
-		DatabasePort:     testDatabasePort,
-		DatabaseName:     testDatabaseName,
-		DatabaseDriver:   testDatabaseDriver,
-		DatabaseSchema:   testDatabaseSchema,
+		DatabaseUser:     testPsqlDatabaseUser,
+		DatabasePassword: testPsqlDatabasePassword,
+		DatabaseHost:     testPsqlDatabaseHost,
+		DatabasePort:     testPsqlDatabasePort,
+		DatabaseName:     testPsqlDatabaseName,
+		DatabaseDriver:   testPsqlDatabaseDriver,
+		DatabaseSchema:   testPsqlDatabaseSchema,
 		ForceDelete:      false,
 	}
 }
@@ -44,13 +44,13 @@ func createPsqlDatabase() error {
 		return err
 	}
 
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s;", testDatabaseName))
+	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s;", testPsqlDatabaseName))
 	if err != nil {
 		return err
 	}
 	db.Close()
 
-	db, err = sql.Open("postgres", fmt.Sprintf(psqlDatabaseUri, testDatabaseName))
+	db, err = sql.Open("postgres", fmt.Sprintf(psqlDatabaseUri, testPsqlDatabaseName))
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func removePsqlDatabase() error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec(fmt.Sprintf("DROP DATABASE %s;", testDatabaseName))
+	_, err = db.Exec(fmt.Sprintf("DROP DATABASE %s;", testPsqlDatabaseName))
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func TestMain(m *testing.M) {
 		log.Fatalln(err)
 	}
 
-	db, err := sql.Open("postgres", fmt.Sprintf(psqlDatabaseUri, testDatabaseName))
+	db, err := sql.Open("postgres", fmt.Sprintf(psqlDatabaseUri, testPsqlDatabaseName))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -163,7 +163,7 @@ func Test_getTableNames_helper_func(t *testing.T) {
 		DB = original
 	}(originalDB)
 
-	conf := createConf()
+	conf := createPsqlConf()
 
 	tables, err := getTableNames(conf)
 	if err != nil {
@@ -193,7 +193,7 @@ func Test_getTableColumns_helpers_func(t *testing.T) {
 		DB = original
 	}(originalDB)
 
-	conf := createConf()
+	conf := createPsqlConf()
 
 	tables, err := getTableNames(conf)
 	if err != nil {
@@ -234,7 +234,7 @@ func Test_getPrimaryKeys(t *testing.T) {
 		DB = original
 	}(originalDB)
 
-	conf := createConf()
+	conf := createPsqlConf()
 
 	pks, err := getPrimaryKeys(conf)
 	if err != nil {
@@ -281,7 +281,7 @@ func Test_getForeignKeys_helper_func(t *testing.T) {
 		DB = original
 	}(originalDB)
 
-	conf := createConf()
+	conf := createPsqlConf()
 
 	fks, err := getForeignKeys(conf)
 	if err != nil {
@@ -331,7 +331,7 @@ func Test_getColsAndEnums_helper_func(t *testing.T) {
 		DB = original
 	}(originalDB)
 
-	conf := createConf()
+	conf := createPsqlConf()
 
 	enums, err := getColsAndEnums(conf)
 	if err != nil {
@@ -361,7 +361,7 @@ func Test_getUniqueCols_helper_func(t *testing.T) {
 		DB = original
 	}(originalDB)
 
-	conf := createConf()
+	conf := createPsqlConf()
 
 	uniqueColumns, err := getUniqueCols(conf)
 	if err != nil {
@@ -409,7 +409,7 @@ func Test_databaseMetaDataSetup_AND_some_repository_methods(t *testing.T) {
 		DB = original
 	}(originalDB)
 
-	conf := createConf()
+	conf := createPsqlConf()
 	conf.ForceDelete = true // for testing we force delete of the data in the database.
 
 	storage, err := NewJsonStorage()
