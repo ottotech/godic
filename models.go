@@ -23,9 +23,20 @@ type table struct {
 // Tables is a collection of tables.
 type Tables []table
 
-// Count counts the number of tables of the database.
-func (t Tables) Count() int {
+// count counts the number of tables of the database.
+func (t Tables) count() int {
 	return len(t)
+}
+
+// get will the get the table with the given name.
+// If the table does not exist get() will return an error.
+func (t Tables) get(tableName string) (table, error) {
+	for i := range t {
+		if t[i].Name == tableName {
+			return t[i], nil
+		}
+	}
+	return table{}, errors.Errorf("there is no table with the given name %s", tableName)
 }
 
 // colMetaData holds metadata about a column in a table from the database.

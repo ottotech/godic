@@ -16,7 +16,8 @@ var mysqlVars = map[string]string{
 	"database": "",
 }
 
-// formatMysqlSource formats the mysqlVars map into a valid dataSourceName url so we can connect to a mysql database.
+// formatMysqlSource formats the mysqlVars map into a valid dataSourceName url using the given *Config
+// so we can connect to a mysql database.
 func formatMysqlSource(conf *Config) string {
 	mysqlVars["user"] = conf.DatabaseUser
 	mysqlVars["password"] = conf.DatabasePassword

@@ -401,3 +401,90 @@ func Test_getUniqueCols_helper_func(t *testing.T) {
 		}
 	}
 }
+
+func Test_databaseMetaDataSetup_AND_some_repository_methods(t *testing.T) {
+	originalDB := DB
+	DB = psqlTestDb
+	defer func(original *sql.DB) {
+		DB = original
+	}(originalDB)
+
+	conf := createConf()
+	conf.ForceDelete = true // for testing we force delete
+
+	storage, err := NewJsonStorage()
+	if err != nil {
+		t.Fatalf("we shouldn't get an error from NewJsonStorage; got %s", err)
+	}
+
+	// Test setup.
+
+	err = databaseMetaDataSetup(storage, conf)
+	if err != nil {
+		t.Fatalf("we shouldn't get an error from databaseMetaDataSetup; got %s", err)
+	}
+
+	// Test some repository methods
+
+	tables, err := storage.GetTables()
+	if err != nil {
+		t.Fatalf("we shouldn't get an error from GetTables; got %s", err)
+	}
+
+	if tables.count() != 3 {
+		t.Fatalf("expected to have 3 tables got %d", tables.count())
+	}
+
+	expectedTables := []table{
+		{
+			ID:          "order",
+			Name:        "order",
+			Description: "",
+		}, {
+			ID:          "product",
+			Name:        "product",
+			Description: "",
+		}, {
+			ID:          "order_line",
+			Name:        "order_line",
+			Description: "",
+		},
+	}
+
+	for _, e := range expectedTables {
+		exists := false
+		for _, tb := range tables {
+			if tb.ID == e.ID {
+				exists = true
+				if !reflect.DeepEqual(tb, e) {
+					t.Errorf("expected table data to be %+v; got %+v instead", e, t)
+				}
+				break
+			}
+		}
+		if !exists {
+			t.Errorf("table %s does not exist after setup", e.Name)
+		}
+	}
+
+	databaseInfo, err := storage.GetDatabaseInfo()
+	if err != nil {
+		t.Fatalf("we shouldn't get an error from GetDatabaseInfo; got %s", err)
+	}
+	if equal, _ := compareStoredDatabaseInfoWithConf(databaseInfo, conf); !equal {
+		t.Errorf("database info (%+v) differs from current conf (%+v)", databaseInfo, conf)
+	}
+
+	orderTable, _ := tables.get("order")
+	err = storage.UpdateAddTableDescription(orderTable.ID, "I am a cool table.")
+	if err != nil {
+		t.Fatalf("we shouldn't get any error from UpdateAddTableDescription; got %s", err)
+	}
+
+	tables, _ = storage.GetTables()
+	updatedTable, _ := tables.get("order")
+	if updatedTable.Description != "I am a cool table." {
+		t.Errorf("expected tables description to be (%s); got %s instead", "I am a cool table.",
+			updatedTable.Description)
+	}
+}

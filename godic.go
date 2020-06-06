@@ -38,6 +38,7 @@ func main() {
 			_logger.Println(err)
 		}
 	}()
+
 	conf, output, err := ParseFlags(os.Args[0], os.Args[1:])
 	if err == flag.ErrHelp {
 		fmt.Println(output)

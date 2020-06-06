@@ -70,19 +70,19 @@ func (s *jsonStorage) AddTable(t table) error {
 	return nil
 }
 
-func (s *jsonStorage) AddColMetaData(tbName string, col colMetaData) error {
+func (s *jsonStorage) AddColMetaData(tableName string, col colMetaData) error {
 	ss, err := s.db.ReadAll(collectionColumn)
 	if err != nil && !os.IsNotExist(err) {
 		return errors.Errorf("got error while trying to add column meta data of column %s in table %s; %s",
-			col.Name, tbName, err)
+			col.Name, tableName, err)
 	}
 
-	resource := tbName + "_" + col.Name + "_" + strconv.Itoa(len(ss)+1)
+	resource := tableName + "_" + col.Name + "_" + strconv.Itoa(len(ss)+1)
 	col.ID = resource
 	err = s.db.Write(collectionColumn, resource, col)
 	if err != nil {
 		return errors.Errorf("got error while trying to add column meta data of column %s in table %s; %s",
-			col.Name, tbName, err)
+			col.Name, tableName, err)
 	}
 
 	return nil
