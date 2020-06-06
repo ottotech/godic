@@ -125,6 +125,10 @@ func databaseMetaDataSetup(storage Repository, conf *Config) error {
 
 		tableColumns, err := getTableColumns(tableNames[i], conf)
 		if err != nil {
+			if removeErr := storage.RemoveEverything(); removeErr != nil {
+				err = fmt.Errorf("we got this error (%s) when trying to do the setup and we couldn't "+
+					"rollback, you might need to use the force_delete flag to maintain consistency", err)
+			}
 			return err
 		}
 
@@ -168,6 +172,10 @@ func databaseMetaDataSetup(storage Repository, conf *Config) error {
 
 			err = storage.AddColMetaData(tableNames[i], colMeta)
 			if err != nil {
+				if removeErr := storage.RemoveEverything(); removeErr != nil {
+					err = fmt.Errorf("we got this error (%s) when trying to do the setup and we couldn't "+
+						"rollback, you might need to use the force_delete flag to maintain consistency", err)
+				}
 				return err
 			}
 		}
