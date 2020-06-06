@@ -66,7 +66,7 @@ type colMetadata struct {
 type ColumnsMetadata []colMetadata
 
 // getByColNameAndTableName will get the column metadata with the given colName in the given tableName.
-// If the column does not exist get() will return an error.
+// If the column does not exist getByColNameAndTableName() will return an error.
 func (cols ColumnsMetadata) getByColNameAndTableName(colName string, tableName string) (colMetadata, error) {
 	for i := range cols {
 		if cols[i].Name == colName && cols[i].TBName == tableName {
@@ -74,6 +74,17 @@ func (cols ColumnsMetadata) getByColNameAndTableName(colName string, tableName s
 		}
 	}
 	return colMetadata{}, errors.Errorf("column with name %s in the given table %s does not exist", colName, tableName)
+}
+
+// getByColumnID will get the column metadata with the given column id.
+// If the column does not exist getByColumnID() will return an error.
+func (cols ColumnsMetadata) getByColumnID(columnID string) (colMetadata, error) {
+	for i := range cols {
+		if cols[i].ID == columnID {
+			return cols[i], nil
+		}
+	}
+	return colMetadata{}, errors.Errorf("column with id %s does not exist", columnID)
 }
 
 // primaryKey holds information about a primary key.
