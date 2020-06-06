@@ -424,7 +424,7 @@ func Test_databaseMetaDataSetup_AND_some_repository_methods(t *testing.T) {
 		t.Fatalf("we shouldn't get an error from databaseMetaDataSetup; got %s", err)
 	}
 
-	// Test some repository methods
+	// Test some repository methods.
 
 	tables, err := storage.GetTables()
 	if err != nil {
@@ -495,5 +495,26 @@ func Test_databaseMetaDataSetup_AND_some_repository_methods(t *testing.T) {
 
 	if len(columns) != 7 {
 		t.Fatalf("expected 7 columns got %d", len(columns))
+	}
+
+	productNameCol, err := columns.getByColNameAndTableName("name", "product")
+	if err != nil {
+		t.Fatalf("we shouldn't get an error from getByColNameAndTableName; got %s", err)
+	}
+
+	err = storage.UpdateAddColumnDescription(productNameCol.ID, "I have a nice name.")
+	if err != nil {
+		t.Fatalf("we shouldn't get an error from UpdateAddColumnDescription; got %s", err)
+	}
+
+	columns, err = storage.GetColumns()
+	if err != nil {
+		t.Fatalf("we shouldn't get an error from GetColumns; got %s", err)
+	}
+
+	productNameCol, _ = columns.getByColNameAndTableName("name", "product")
+	if productNameCol.Description != "I have a nice name." {
+		t.Errorf("expected description to be (%s) in column %s in table %s got %s", "I have a nice name.",
+			productNameCol.Name, productNameCol.TBName, productNameCol.Description)
 	}
 }

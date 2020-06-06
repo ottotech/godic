@@ -1,6 +1,8 @@
 package main
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+)
 
 // databaseInfo holds general information about the database.
 type databaseInfo struct {
@@ -63,9 +65,9 @@ type colMetadata struct {
 // ColumnsMetadata is a collection of colMetadata.
 type ColumnsMetadata []colMetadata
 
-// get will get the column metadata with the given colName in the given tableName.
+// getByColNameAndTableName will get the column metadata with the given colName in the given tableName.
 // If the column does not exist get() will return an error.
-func (cols ColumnsMetadata) get(colName string, tableName string) (colMetadata, error) {
+func (cols ColumnsMetadata) getByColNameAndTableName(colName string, tableName string) (colMetadata, error) {
 	for i := range cols {
 		if cols[i].Name == colName && cols[i].TBName == tableName {
 			return cols[i], nil
