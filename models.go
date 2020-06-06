@@ -148,8 +148,8 @@ func (ces ColumnsAndEnums) get(colName string, tableName string) (colAndEnum, er
 
 // uniqueCol holds columns with an unique index.
 type uniqueCol struct {
-	Table            string
-	Col              string
+	Table string
+	Col   string
 }
 
 // UniqueCols is a collection of columns with unique indexes.

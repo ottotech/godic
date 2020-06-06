@@ -371,4 +371,33 @@ func Test_getUniqueCols_helper_func(t *testing.T) {
 	if len(uniqueColumns) != 4 {
 		t.Errorf("we expected 4 unique columns got %d", len(uniqueColumns))
 	}
+
+	expectedUniqueColumns := []uniqueCol{
+		{
+			Table: "order_line",
+			Col:   "id",
+		}, {
+			Table: "order",
+			Col:   "id",
+		}, {
+			Table: "product",
+			Col:   "id",
+		}, {
+			Table: "product",
+			Col:   "name",
+		},
+	}
+
+	for _, e := range expectedUniqueColumns {
+		exists := false
+		for _, unique := range uniqueColumns {
+			if unique.Table == e.Table && unique.Col == e.Col {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			t.Errorf("expected to have a unique column %s in table %s", e.Col, e.Table)
+		}
+	}
 }
