@@ -22,7 +22,7 @@ const (
 	db = "db"
 )
 
-//jsonStorage stores the data in json files.
+// jsonStorage stores the data in json files.
 type jsonStorage struct {
 	db *scribble.Driver
 }
