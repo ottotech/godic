@@ -156,7 +156,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func Test_getTableNames_helper_func(t *testing.T) {
+func Test_getTableNames_helper_func_for_psql_db(t *testing.T) {
 	originalDB := DB
 	DB = psqlTestDb
 	defer func(original *sql.DB) {
@@ -186,7 +186,7 @@ func Test_getTableNames_helper_func(t *testing.T) {
 	}
 }
 
-func Test_getTableColumns_helpers_func(t *testing.T) {
+func Test_getTableColumns_helpers_func_for_psql_db(t *testing.T) {
 	originalDB := DB
 	DB = psqlTestDb
 	defer func(original *sql.DB) {
@@ -227,7 +227,7 @@ func Test_getTableColumns_helpers_func(t *testing.T) {
 	}
 }
 
-func Test_getPrimaryKeys(t *testing.T) {
+func Test_getPrimaryKeys_for_psql_db(t *testing.T) {
 	originalDB := DB
 	DB = psqlTestDb
 	defer func(original *sql.DB) {
@@ -274,7 +274,7 @@ func Test_getPrimaryKeys(t *testing.T) {
 	}
 }
 
-func Test_getForeignKeys_helper_func(t *testing.T) {
+func Test_getForeignKeys_helper_func_for_psql_db(t *testing.T) {
 	originalDB := DB
 	DB = psqlTestDb
 	defer func(original *sql.DB) {
@@ -324,7 +324,7 @@ func Test_getForeignKeys_helper_func(t *testing.T) {
 	}
 }
 
-func Test_getColsAndEnums_helper_func(t *testing.T) {
+func Test_getColsAndEnums_helper_func_for_psql_db(t *testing.T) {
 	originalDB := DB
 	DB = psqlTestDb
 	defer func(original *sql.DB) {
@@ -354,7 +354,7 @@ func Test_getColsAndEnums_helper_func(t *testing.T) {
 	}
 }
 
-func Test_getUniqueCols_helper_func(t *testing.T) {
+func Test_getUniqueCols_helper_func_for_psql_db(t *testing.T) {
 	originalDB := DB
 	DB = psqlTestDb
 	defer func(original *sql.DB) {
@@ -402,7 +402,7 @@ func Test_getUniqueCols_helper_func(t *testing.T) {
 	}
 }
 
-func Test_databaseMetaDataSetup_AND_some_repository_methods(t *testing.T) {
+func Test_databaseMetaDataSetup_AND_some_repository_methods_for_psql_db(t *testing.T) {
 	originalDB := DB
 	DB = psqlTestDb
 	defer func(original *sql.DB) {
