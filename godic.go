@@ -48,6 +48,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	if ok, msg := conf.validate(); !ok {
+		log.Fatalln(msg)
+	}
+
 	err = run(conf)
 	if err != nil {
 		log.Fatalln(err)

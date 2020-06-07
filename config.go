@@ -18,6 +18,23 @@ type Config struct {
 	ForceDelete      bool   `json:"force_delete"`
 }
 
+// validate validates the configuration options given to Config.
+func (c *Config) validate() (ok bool, msg string) {
+	msg = "There are some options missing from the flags given to run godic, please refer to -h to check " +
+		"godic flags usage."
+
+	if c.ServerPort == 0 {
+		return
+	}
+
+	if c.DatabaseUser == "" || c.DatabasePassword == "" || c.DatabaseHost == "" || c.DatabasePort == 0 ||
+		c.DatabaseSchema == "" || c.DatabaseDriver == "" || c.DatabaseName == "" {
+		return
+	}
+
+	return true, ""
+}
+
 // ParseFlags parses the
 func ParseFlags(programName string, args []string) (config *Config, output string, err error) {
 	flags := flag.NewFlagSet(programName, flag.ContinueOnError)
