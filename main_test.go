@@ -9,14 +9,16 @@ import (
 	"testing"
 )
 
+// variables that hold the global access to the psql and mysql testing databases.
 var (
 	mysqlTestDb *sql.DB
 	psqlTestDb  *sql.DB
 )
 
+// variables that represent the uris to connect to the psql and mysql testing databases.
 var (
-	psqlDatabaseUri  = "user=test password=secret host=localhost port=5555 dbname=%s sslmode=disable"
-	mysqlDatabaseUri = "root:secret@tcp(localhost:3333)/%s?multiStatements=true"
+	psqlDatabaseUri  = "user=test password=secret host=localhost port=5432 dbname=%s sslmode=disable"
+	mysqlDatabaseUri = "root:secret@tcp(localhost:3306)/%s?multiStatements=true"
 )
 
 const (
