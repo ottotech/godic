@@ -335,7 +335,7 @@ var psqlQueryEnumTypesAndCols = `
 	SELECT isc.table_name, 
 		   isc.column_name, 
 		   t.typname                     AS enum_name, 
-		   String_agg(e.enumlabel, ', ') AS enum_value 
+		   String_agg(e.enumlabel, ',') AS enum_value 
 	FROM   pg_type AS t 
 		   JOIN pg_enum e 
 			 ON t.oid = e.enumtypid 

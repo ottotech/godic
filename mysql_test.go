@@ -6,14 +6,14 @@ import (
 	"testing"
 )
 
-func Test_getTableNames_helper_func_for_psql_db(t *testing.T) {
+func Test_getTableNames_helper_func_for_mysql_db(t *testing.T) {
 	originalDB := DB
-	DB = psqlTestDb
+	DB = mysqlTestDb
 	defer func(original *sql.DB) {
 		DB = original
 	}(originalDB)
 
-	conf := createPsqlConf()
+	conf := createMysqlConf()
 
 	tables, err := getTableNames(conf)
 	if err != nil {
@@ -36,14 +36,14 @@ func Test_getTableNames_helper_func_for_psql_db(t *testing.T) {
 	}
 }
 
-func Test_getTableColumns_helpers_func_for_psql_db(t *testing.T) {
+func Test_getTableColumns_helpers_func_for_mysql_db(t *testing.T) {
 	originalDB := DB
-	DB = psqlTestDb
+	DB = mysqlTestDb
 	defer func(original *sql.DB) {
 		DB = original
 	}(originalDB)
 
-	conf := createPsqlConf()
+	conf := createMysqlConf()
 
 	tables, err := getTableNames(conf)
 	if err != nil {
@@ -77,14 +77,14 @@ func Test_getTableColumns_helpers_func_for_psql_db(t *testing.T) {
 	}
 }
 
-func Test_getPrimaryKeys_for_psql_db(t *testing.T) {
+func Test_getPrimaryKeys_for_mysql_db(t *testing.T) {
 	originalDB := DB
-	DB = psqlTestDb
+	DB = mysqlTestDb
 	defer func(original *sql.DB) {
 		DB = original
 	}(originalDB)
 
-	conf := createPsqlConf()
+	conf := createMysqlConf()
 
 	pks, err := getPrimaryKeys(conf)
 	if err != nil {
@@ -124,14 +124,14 @@ func Test_getPrimaryKeys_for_psql_db(t *testing.T) {
 	}
 }
 
-func Test_getForeignKeys_helper_func_for_psql_db(t *testing.T) {
+func Test_getForeignKeys_helper_func_for_mysql_db(t *testing.T) {
 	originalDB := DB
-	DB = psqlTestDb
+	DB = mysqlTestDb
 	defer func(original *sql.DB) {
 		DB = original
 	}(originalDB)
 
-	conf := createPsqlConf()
+	conf := createMysqlConf()
 
 	fks, err := getForeignKeys(conf)
 	if err != nil {
@@ -174,14 +174,14 @@ func Test_getForeignKeys_helper_func_for_psql_db(t *testing.T) {
 	}
 }
 
-func Test_getColsAndEnums_helper_func_for_psql_db(t *testing.T) {
+func Test_getColsAndEnums_helper_func_for_mysql_db(t *testing.T) {
 	originalDB := DB
-	DB = psqlTestDb
+	DB = mysqlTestDb
 	defer func(original *sql.DB) {
 		DB = original
 	}(originalDB)
 
-	conf := createPsqlConf()
+	conf := createMysqlConf()
 
 	enums, err := getColsAndEnums(conf)
 	if err != nil {
@@ -195,7 +195,7 @@ func Test_getColsAndEnums_helper_func_for_psql_db(t *testing.T) {
 	expectedEnum := colAndEnum{
 		Table:      "product",
 		Col:        "counting_option",
-		EnumName:   "counting_option",
+		EnumName:   "enum",
 		EnumValues: "unit,decimal",
 	}
 
@@ -204,14 +204,14 @@ func Test_getColsAndEnums_helper_func_for_psql_db(t *testing.T) {
 	}
 }
 
-func Test_getUniqueCols_helper_func_for_psql_db(t *testing.T) {
+func Test_getUniqueCols_helper_func_for_mysql_db(t *testing.T) {
 	originalDB := DB
-	DB = psqlTestDb
+	DB = mysqlTestDb
 	defer func(original *sql.DB) {
 		DB = original
 	}(originalDB)
 
-	conf := createPsqlConf()
+	conf := createMysqlConf()
 
 	uniqueColumns, err := getUniqueCols(conf)
 	if err != nil {
@@ -252,14 +252,14 @@ func Test_getUniqueCols_helper_func_for_psql_db(t *testing.T) {
 	}
 }
 
-func Test_databaseMetaDataSetup_AND_some_repository_methods_for_psql_db(t *testing.T) {
+func Test_databaseMetaDataSetup_AND_some_repository_methods_for_mysql_db(t *testing.T) {
 	originalDB := DB
-	DB = psqlTestDb
+	DB = mysqlTestDb
 	defer func(original *sql.DB) {
 		DB = original
 	}(originalDB)
 
-	conf := createPsqlConf()
+	conf := createMysqlConf()
 	conf.ForceDelete = true // for testing we force delete of the data in the database.
 
 	storage, err := NewJsonStorage()
