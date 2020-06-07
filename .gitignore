@@ -4,4 +4,3 @@
 data
 config.json
 error.log
-bindata.go
