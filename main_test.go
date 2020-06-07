@@ -266,11 +266,13 @@ func TestMain(m *testing.M) {
 	var err error
 	err = createPsqlDatabase()
 	if err != nil {
+		removePsqlDatabase()
 		log.Fatalln(err)
 	}
 
 	err = createMysqlDatabase()
 	if err != nil {
+		removeMysqlDatabase()
 		log.Fatalln(err)
 	}
 
