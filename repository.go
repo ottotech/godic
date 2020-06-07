@@ -5,11 +5,11 @@ import "errors"
 var ErrNoDatabaseMetaDataStored = errors.New("there is no database metadata stored in repository")
 
 type Repository interface {
-	UpdateAddTableDescription(tableID string, description string) error
-	UpdateAddColumnDescription(columnID string, description string) error
 	GetDatabaseInfo() (databaseInfo, error)
 	GetTables() (Tables, error)
 	GetColumns() (ColumnsMetadata, error)
+	UpdateAddTableDescription(tableID string, description string) error
+	UpdateAddColumnDescription(columnID string, description string) error
 	Setup
 }
 
