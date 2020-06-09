@@ -100,9 +100,10 @@ func run(conf *Config) error {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", index())
+	mux.HandleFunc("/", index(storage))
 	mux.HandleFunc("/update-add-table-description", updateAddTableDescriptionHandler(storage))
 	mux.HandleFunc("/update-add-column-description", updateAddColumnDescriptionHandler(storage))
+	mux.HandleFunc("/js/app.js", serveJS())
 	srv := http.Server{
 		Addr:    ":" + strconv.Itoa(conf.ServerPort),
 		Handler: mux,
@@ -115,9 +116,9 @@ func run(conf *Config) error {
 	return nil
 }
 
-func index() http.HandlerFunc {
+func index(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sb, err := Asset("index.html")
+		sb, err := Asset("assets/index.html")
 		if err != nil {
 			_logger.Println(err)
 			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
@@ -129,7 +130,39 @@ func index() http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
 			return
 		}
-		err = tpl.Execute(w, nil)
+
+		info, err := repo.GetDatabaseInfo()
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		t, err := repo.GetTables()
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		cols, err := repo.GetColumns()
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		data := struct {
+			DatabaseInfo databaseInfo
+			Tables Tables
+			Columns ColumnsMetadata
+		}{
+			info,
+			t,
+			cols,
+		}
+
+		err = tpl.Execute(w, data)
 		if err != nil {
 			_logger.Println(err)
 			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
@@ -194,5 +227,21 @@ func updateAddColumnDescriptionHandler(repo Repository) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func serveJS() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sb, err := Asset("assets/app.js")
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = w.Write(sb)
+		if err != nil {
+			_logger.Println(err)
+		}
 	}
 }
