@@ -70,6 +70,14 @@ class TablesData extends React.Component {
                 cols.splice(1, 0, fkObj)
             }
 
+            // finally we loop again through the table columns and check if any has a ENUM type.
+            // If so, we need to create a custom description for that column.
+            for (let k = 0; k < cols.length; k++) {
+                if (cols[k]["has_enum"]) {
+                    cols[k]["db_type"] = "ENUM("  + cols[k]["enum_values"].join() + ")"
+                }
+            }
+
             tables[j]["columns"] = cols
         }
 
