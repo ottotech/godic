@@ -30,11 +30,13 @@ class TablesData extends React.Component {
         this.state = {
             tables: [],
         };
+        this.onChangeColumnDesc = this.onChangeColumnDesc.bind(this);
+        this.onChangeTableDesc = this.onChangeTableDesc.bind(this);
     }
 
     componentDidMount() {
-        let tables = data["Tables"]
-        let columns = data["Columns"]
+        let tables = data["Tables"];
+        let columns = data["Columns"];
 
         for (let j = 0; j < tables.length; j++) {
             let cols = []
@@ -71,23 +73,34 @@ class TablesData extends React.Component {
             tables[j]["columns"] = cols
         }
 
-        this.setState({tables: tables})
+        this.setState({tables:tables})
+    }
+
+    onChangeTableDesc = (e) => {
+        let tableIdx = e.target.getAttribute("data-table-idx");
+        let tables = this.state.tables;
+        tables[tableIdx]["description"] = e.target.value;
+        this.setState({tables});
     }
 
     onChangeColumnDesc = (e) => {
-        let tableName = e.target.getAttribute("data-table");
-        let colID = e.target.getAttribute("data-col-id");
+        let tableIdx = e.target.getAttribute("data-table-idx");
         let colIdx = e.target.getAttribute("data-col-idx");
+        let tables = this.state.tables;
+        tables[tableIdx]["columns"][colIdx]["description"] = e.target.value;
+        this.setState({tables});
     }
 
     rendeTables() {
         return this.state.tables.map((table, i) =>
             <Table
                 key={i}
+                tableIdx={i}
                 tableName={table["name"]}
                 tableID={table["id"]}
                 tableColumns={table["columns"]}
                 onChangeColumnDesc={this.onChangeColumnDesc}
+                onChangeTableDesc={this.onChangeTableDesc}
             />
         )
     }
@@ -136,6 +149,7 @@ class Table extends React.Component{
                         style={styles.table}
                     >
                         <textarea
+                            data-table-idx={this.props.tableIdx}
                             data-table={col["table_name"]}
                             data-col-id={col["id"]}
                             data-col-idx={i}
@@ -143,9 +157,6 @@ class Table extends React.Component{
                             rows="4"
                             cols="50"
                         />
-                    </td>
-                    <td>
-                        <button type="button">save</button>
                     </td>
                 </tr>
             )
@@ -158,8 +169,13 @@ class Table extends React.Component{
                 <p style={styles.p}><strong>Table: </strong>{this.props.tableName}</p>
                 <p style={styles.p}><strong>Description:</strong></p>
                 <div style={{display: "flex"}}>
-                    <textarea id={this.props.tableID} rows="4" cols="80"/>
-                    <button type="button">save</button>
+                    <textarea
+                        data-table-idx={this.props.tableIdx}
+                        onChange={this.props.onChangeTableDesc}
+                        rows="4"
+                        cols="80"
+                    />
+                    <button style={{width: 60}} type="button">save</button>
                 </div>
                 <table style={styles.table}>
                     <thead>
@@ -170,7 +186,6 @@ class Table extends React.Component{
                         <th style={styles.table}>Nullable</th>
                         <th style={styles.table}>Unique</th>
                         <th style={styles.table}>Description</th>
-                        <th style={styles.table}>Action</th>
                     </tr>
                     </thead>
                     <tbody>
