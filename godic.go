@@ -101,8 +101,7 @@ func run(conf *Config) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index(storage))
-	mux.HandleFunc("/update-add-table-description", updateAddTableDescriptionHandler(storage))
-	mux.HandleFunc("/update-add-column-description", updateAddColumnDescriptionHandler(storage))
+	mux.HandleFunc("/update", updateTableDictionary(storage))
 	mux.HandleFunc("/js/app.js", serveJS())
 	srv := http.Server{
 		Addr:    ":" + strconv.Itoa(conf.ServerPort),
@@ -138,7 +137,7 @@ func index(repo Repository) http.HandlerFunc {
 			return
 		}
 
-		t, err := repo.GetTables()
+		tables, err := repo.GetTables()
 		if err != nil {
 			_logger.Println(err)
 			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
@@ -154,11 +153,11 @@ func index(repo Repository) http.HandlerFunc {
 
 		data := struct {
 			DatabaseInfo databaseInfo
-			Tables Tables
-			Columns ColumnsMetadata
+			Tables       Tables
+			Columns      ColumnsMetadata
 		}{
 			info,
-			t,
+			tables,
 			cols,
 		}
 
@@ -170,7 +169,7 @@ func index(repo Repository) http.HandlerFunc {
 	}
 }
 
-func updateAddTableDescriptionHandler(repo Repository) http.HandlerFunc {
+func updateTableDictionary(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
@@ -180,6 +179,10 @@ func updateAddTableDescriptionHandler(repo Repository) http.HandlerFunc {
 		requestData := struct {
 			TableID     string `json:"table_id"`
 			Description string `json:"description"`
+			ColumnsData []struct {
+				ColID       string `json:"col_id"`
+				Description string `json:"description"`
+			} `json:"columns_data"`
 		}{}
 
 		err := json.NewDecoder(r.Body).Decode(&requestData)
@@ -189,42 +192,7 @@ func updateAddTableDescriptionHandler(repo Repository) http.HandlerFunc {
 			return
 		}
 
-		err = repo.UpdateAddTableDescription(requestData.TableID, requestData.Description)
-		if err != nil {
-			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func updateAddColumnDescriptionHandler(repo Repository) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
-			return
-		}
-
-		requestData := struct {
-			ColumnID    string `json:"column_id"`
-			Description string `json:"description"`
-		}{}
-
-		err := json.NewDecoder(r.Body).Decode(&requestData)
-		if err != nil {
-			// error managed like 500 for simplicity.
-			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-			return
-		}
-
-		err = repo.UpdateAddColumnDescription(requestData.ColumnID, requestData.Description)
-		if err != nil {
-			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-			return
-		}
-
+		fmt.Printf("%+v\n", requestData)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 	}
