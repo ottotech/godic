@@ -5,7 +5,7 @@ import (
 	"flag"
 )
 
-// Config holds the different configuration options of the database as well as some option for the godic app.
+// Config holds the different configuration options of the database as well as some options for the godic app.
 type Config struct {
 	ServerPort       int    `json:"server_port"`
 	DatabaseUser     string `json:"database_user"`
@@ -35,7 +35,7 @@ func (c *Config) validate() (ok bool, msg string) {
 	return true, ""
 }
 
-// ParseFlags parses the
+// ParseFlags parses the flags given to the godic app.
 func ParseFlags(programName string, args []string) (config *Config, output string, err error) {
 	flags := flag.NewFlagSet(programName, flag.ContinueOnError)
 	var buf bytes.Buffer

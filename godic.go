@@ -102,7 +102,8 @@ func run(conf *Config) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index(storage))
 	mux.HandleFunc("/update", updateTableDictionary(storage))
-	mux.HandleFunc("/js/app.js", serveJS())
+	mux.Handle("/favicon.ico", http.NotFoundHandler())
+	mux.HandleFunc("/js/app.js", serveJSDevelopment())
 	srv := http.Server{
 		Addr:    ":" + strconv.Itoa(conf.ServerPort),
 		Handler: mux,
@@ -151,14 +152,21 @@ func index(repo Repository) http.HandlerFunc {
 			return
 		}
 
+		production := false
+		if onProduction, _ := strconv.ParseBool(os.Getenv("PRODUCTION")); onProduction {
+			production = onProduction
+		}
+
 		data := struct {
 			DatabaseInfo databaseInfo
 			Tables       Tables
 			Columns      ColumnsMetadata
+			Production   bool
 		}{
 			info,
 			tables,
 			cols,
+			production,
 		}
 
 		err = tpl.Execute(w, data)
@@ -211,7 +219,7 @@ func updateTableDictionary(repo Repository) http.HandlerFunc {
 	}
 }
 
-func serveJS() http.HandlerFunc {
+func serveJSDevelopment() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sb, err := Asset("assets/app.js")
 		if err != nil {
