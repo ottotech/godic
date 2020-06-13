@@ -177,22 +177,35 @@ func updateTableDictionary(repo Repository) http.HandlerFunc {
 		}
 
 		requestData := struct {
-			TableID     string `json:"table_id"`
-			Description string `json:"description"`
-			ColumnsData []struct {
+			TableID          string `json:"table_id"`
+			TableDescription string `json:"table_description"`
+			ColumnsData      []struct {
 				ColID       string `json:"col_id"`
 				Description string `json:"description"`
 			} `json:"columns_data"`
 		}{}
 
 		err := json.NewDecoder(r.Body).Decode(&requestData)
+		// error managed like 500 for simplicity.
 		if err != nil {
-			// error managed like 500 for simplicity.
 			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 			return
 		}
 
-		fmt.Printf("%+v\n", requestData)
+		err = repo.UpdateAddTableDescription(requestData.TableID, requestData.TableDescription)
+		if err != nil {
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		for _, col := range requestData.ColumnsData {
+			err = repo.UpdateAddColumnDescription(col.ColID, col.Description)
+			if err != nil {
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 	}

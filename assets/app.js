@@ -5,7 +5,6 @@ const e = React.createElement;
 class DatabaseInfo extends React.Component {
     constructor(props) {
         super(props);
-        console.log(data)
         this.state = { info: data["DatabaseInfo"] };
     }
 
@@ -84,6 +83,49 @@ class TablesData extends React.Component {
         this.setState({tables:tables})
     }
 
+    updateTableDictionary = (e) => {
+        let tableIdx = e.target.getAttribute("data-table-idx");
+        let tableName = e.target.getAttribute("data-table-name");
+        let schema = window.location.protocol;
+        let host = window.location.host;
+        let endpoint = schema + "//" + host + "/update";
+        let table = this.state.tables[tableIdx];
+        let columns = table["columns"];
+        let columnsData = [];
+
+        // Let's ask the user if he/she really wants to update the data dictionary of the table.
+        let yes = confirm("Are you sure you want to update the dictionary of table " + tableName +"?")
+        if (!yes) {
+            return
+        }
+
+        for (let i = 0; i < columns.length; i++) {
+            let col = {}
+            col["col_id"] = columns[i]["id"];
+            col["description"] = columns[i]["description"];
+            columnsData.push(col)
+        }
+
+        fetch(endpoint, {
+            method: "POST",
+            body: JSON.stringify({
+                table_id: table["id"],
+                table_description: table["description"],
+                columns_data: columnsData
+            })
+        }).then(res => {
+            if (res.status === 200) {
+                alert("table " +  tableName + " has been updated successfully.")
+            } else {
+                res.text().then((text) => {
+                    alert("An error occurred: " + text);
+                })
+            }
+        }).catch(function (error) {
+            console.log(error);
+        });
+    }
+
     onChangeTableDesc = (e) => {
         let tableIdx = e.target.getAttribute("data-table-idx");
         let tables = this.state.tables;
@@ -106,9 +148,11 @@ class TablesData extends React.Component {
                 tableIdx={i}
                 tableName={table["name"]}
                 tableID={table["id"]}
+                tableDescription={table["description"]}
                 tableColumns={table["columns"]}
                 onChangeColumnDesc={this.onChangeColumnDesc}
                 onChangeTableDesc={this.onChangeTableDesc}
+                onClickSave={this.updateTableDictionary}
             />
         )
     }
@@ -164,6 +208,7 @@ class Table extends React.Component{
                             onChange={this.props.onChangeColumnDesc}
                             rows="4"
                             cols="50"
+                            value={col["description"]}
                         />
                     </td>
                 </tr>
@@ -182,8 +227,17 @@ class Table extends React.Component{
                         onChange={this.props.onChangeTableDesc}
                         rows="4"
                         cols="80"
+                        value={this.props.tableDescription}
                     />
-                    <button style={{width: 60}} type="button">save</button>
+                    <button
+                        style={{width: 60}}
+                        type="button"
+                        data-table-name={this.props.tableName}
+                        data-table-idx={this.props.tableIdx}
+                        onClick={this.props.onClickSave}
+                    >
+                        save
+                    </button>
                 </div>
                 <table style={styles.table}>
                     <thead>
