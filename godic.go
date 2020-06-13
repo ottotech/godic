@@ -104,6 +104,7 @@ func run(conf *Config) error {
 	mux.HandleFunc("/update", updateTableDictionary(storage))
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
 	mux.HandleFunc("/js/app.js", serveJSDevelopment())
+	mux.Handle("/react-compiled/", http.StripPrefix("/react-compiled", http.FileServer(http.Dir("./react"))))
 	srv := http.Server{
 		Addr:    ":" + strconv.Itoa(conf.ServerPort),
 		Handler: mux,
@@ -227,7 +228,6 @@ func serveJSDevelopment() http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
 			return
 		}
-
 		_, err = w.Write(sb)
 		if err != nil {
 			_logger.Println(err)
