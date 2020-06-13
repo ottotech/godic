@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"github.com/ian-kent/envconf"
 )
 
 // Config holds the different configuration options of the database as well as some options for the godic app.
@@ -42,15 +43,15 @@ func ParseFlags(programName string, args []string) (config *Config, output strin
 	flags.SetOutput(&buf)
 
 	var conf Config
-	flags.IntVar(&conf.ServerPort, "server_port", 8080, "port used for http server")
-	flags.StringVar(&conf.DatabaseUser, "db_user", "", "database user")
-	flags.StringVar(&conf.DatabasePassword, "db_password", "", "database password")
-	flags.StringVar(&conf.DatabaseHost, "db_host", "", "database host")
-	flags.IntVar(&conf.DatabasePort, "db_port", 5432, "database port")
-	flags.StringVar(&conf.DatabaseName, "db_name", "", "database name")
-	flags.StringVar(&conf.DatabaseDriver, "db_driver", "", "database driver")
-	flags.StringVar(&conf.DatabaseSchema, "db_schema", "public", "database schema")
-	flags.BoolVar(&conf.ForceDelete, "force_delete", false, "deletes completely any stored metadata of a database in order to start fresh")
+	flags.IntVar(&conf.ServerPort, "server_port", envconf.FromEnvP("GODIC_SERVER_PORT", 8080).(int), "port used for http server")
+	flags.StringVar(&conf.DatabaseUser, "db_user", envconf.FromEnvP("GODIC_DB_USER", "").(string), "database user")
+	flags.StringVar(&conf.DatabasePassword, "db_password", envconf.FromEnvP("GODIC_DB_PASSWORD", "").(string), "database password")
+	flags.StringVar(&conf.DatabaseHost, "db_host", envconf.FromEnvP("GODIC_DB_HOST", "").(string), "database host")
+	flags.IntVar(&conf.DatabasePort, "db_port", envconf.FromEnvP("GODIC_DB_PORT", 5432).(int), "database port")
+	flags.StringVar(&conf.DatabaseName, "db_name", envconf.FromEnvP("GODIC_DB_NAME", "").(string), "database name")
+	flags.StringVar(&conf.DatabaseDriver, "db_driver", envconf.FromEnvP("GODIC_DB_DRIVER", "").(string), "database driver")
+	flags.StringVar(&conf.DatabaseSchema, "db_schema", envconf.FromEnvP("GODIC_DB_SCHEMA", "public").(string), "database schema")
+	flags.BoolVar(&conf.ForceDelete, "force_delete", envconf.FromEnvP("GODIC_FORCE_DELETE", false).(bool), "deletes completely any stored metadata of a database in order to start fresh")
 
 	err = flags.Parse(args)
 	if err != nil {
