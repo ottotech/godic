@@ -161,6 +161,7 @@ class TablesData extends React.Component {
         return (
             <div>
                 {this.rendeTables()}
+                <TopBtn/>
             </div>
         );
     }
@@ -206,7 +207,7 @@ class Table extends React.Component{
                             data-col-id={col["id"]}
                             data-col-idx={i}
                             onChange={this.props.onChangeColumnDesc}
-                            rows="4"
+                            rows="5"
                             cols="50"
                             value={col["description"]}
                         />
@@ -256,6 +257,70 @@ class Table extends React.Component{
                 </table>
             </div>
         );
+    }
+}
+
+
+class TopBtn extends React.Component {
+    constructor(props){
+        super(props);
+        this.state = {
+            btn_display_style: "none",
+            btn_opacity: 0.4
+        };
+        this.handleScroll = this.handleScroll.bind(this);
+    }
+
+    componentDidMount(){
+        window.addEventListener('scroll', this.handleScroll);
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('scroll', this.handleScroll);
+    }
+
+    handleScroll() {
+        let bodyScrollPos = document.body.scrollTop;
+        let docScrollPos = document.documentElement.scrollTop;
+        if (bodyScrollPos > 20 || docScrollPos > 20){
+            this.setState({ btn_display_style: "block" })
+        }else {
+            this.setState({ btn_display_style: "None" })
+        }
+    }
+
+    render() {
+        const styles = {};
+
+        styles.top_btn = {
+            display: this.state.btn_display_style,
+            position: "fixed",
+            bottom: 20,
+            right: 30,
+            zIndex: 99,
+            fontSize: 18,
+            border: "none",
+            outline: "none",
+            color: "grey",
+            cursor: "pointer",
+            padding: 15,
+            borderRadius: 4,
+            opacity: this.state.btn_opacity
+        };
+
+        return (
+            <div>
+                <button
+                    style={styles.top_btn}
+                    id="myBtn"
+                    onClick={() => { document.documentElement.scrollTop = 0 }}
+                    onMouseOver={() => this.setState({ btn_opacity: 0.8 }) }
+                    onMouseOut={() => this.setState({ btn_opacity: 0.4 }) }
+                >
+                    Go to top
+                </button>
+            </div>
+        )
     }
 }
 
