@@ -1,5 +1,7 @@
 FROM golang:alpine
+
 ENV PRODUCTION="true"
+
 RUN apk --no-cache add --virtual build-dependencies \
     git \
     && apk update && apk upgrade && apk add bash \
@@ -9,11 +11,18 @@ RUN apk --no-cache add --virtual build-dependencies \
     && go-bindata assets/ \
     && go build .
 
-ADD docker-entrypoint.sh /go/src/github.com/ottotech/godic/
-WORKDIR /go/src/github.com/ottotech/godic
+# Forward error logs to docker log collector
+RUN touch /go/src/github.com/ottotech/godic/error.log \
+    && ln -sf /dev/stderr /go/src/github.com/ottotech/godic/error.log
 
-RUN ["chmod", "+x", "/go/src/github.com/ottotech/godic/docker-entrypoint.sh"]
-CMD ["/go/src/github.com/ottotech/godic/docker-entrypoint.sh"]
+ADD docker-entrypoint.sh /go/src/github.com/ottotech/godic/
+
+VOLUME /go/src/github.com/ottotech/godic/data
+
+WORKDIR /go/src/github.com/ottotech/godic
 
 # Expose default http server port.
 EXPOSE 8080
+
+RUN ["chmod", "+x", "/go/src/github.com/ottotech/godic/docker-entrypoint.sh"]
+CMD ["/go/src/github.com/ottotech/godic/docker-entrypoint.sh"]
