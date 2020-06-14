@@ -9,6 +9,7 @@ RUN apk --no-cache add --virtual build-dependencies \
     && go-bindata assets/ \
     && go build .
 
+ADD docker-entrypoint.sh /go/src/github.com/ottotech/godic/
 WORKDIR /go/src/github.com/ottotech/godic
 
 RUN ["chmod", "+x", "/go/src/github.com/ottotech/godic/docker-entrypoint.sh"]
