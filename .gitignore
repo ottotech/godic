@@ -5,4 +5,3 @@ data
 config.json
 error.log
 coverage.out
-bindata.go
