@@ -8,7 +8,7 @@ godic [![Build Status](https://travis-ci.org/ottotech/godic.svg?branch=master)](
 ## How to use?
 
 ## With Docker
-Pull docker image:
+Pull [docker image](https://hub.docker.com/repository/docker/ottosg/godic):
 ```
 docker pull ottosg/godic
 ```
@@ -86,7 +86,6 @@ $ docker run -d \
     -e GODIC_DB_PORT=5432 \
     -e GODIC_DB_NAME=mydb \ 
     -e GODIC_DB_DRIVER=postgres \
-    -e PGDATA=/var/lib/postgresql/data/pgdata \
     -v godic_mount:/go/src/github.com/ottotech/godic/data \
     --network godic_net \
     godic
@@ -109,11 +108,56 @@ docker network connect godic_net db_container
 If it happens that your are running your database directly in your local machine there are ways to allow a docker 
 container access your local port, but this talk is out of scope here :) 
 
+## With this repo
+```
+go get -d github.com/ottotech/godic
+cd $GOPATH/src/github.com/ottotech/godic
+go build . 
+```
+
+Now in order to run godic you have to use the same environment variables described above
+for the docker use case, but as flags.
+
+For example:
+
+```
+$ ./godic \
+    GODIC_DB_USER=master \
+    GODIC_DB_PASSWORD=secret \
+    GODIC_DB_HOST=NAME_OF_CONTAINER_SERVING_DB \
+    GODIC_DB_PORT=5432 \
+    GODIC_DB_NAME=mydb \ 
+    GODIC_DB_DRIVER=postgres
+``` 
+
+## TODO
+- more tests
+- UI can be improved.
+- Would be nice to be able to support sqlite as well. 
+- Would be nice to support multiple version of mysql and postgres and not just the latest ones.
+
 ## Contributing
 Check repository [godic](https://github.com/ottotech/godic)
 
+Clone the repo and run:
+```
+go get -u github.com/jteeuwen/go-bindata/...
+```
+
+Then on the repo path run:
+```
+go-bindata -debug /assets
+go run .
+``` 
+
+There you are, you can start contributing on the go code or the UI.
+
+This project uses react for websites, see [link](https://reactjs.org/docs/add-react-to-a-website.html)
+
+If you make any changes, run ```go fmt ./...``` before submitting a pull request.
+
 ## License
 
-Copyright ©‎ 2020,  [ottotech](https://ottotech.site/)
+Copyright ©‎ 2020, [ottotech](https://ottotech.site/)
 
 Released under MIT license, see LICENSE for details.
