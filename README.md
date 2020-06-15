@@ -136,6 +136,12 @@ $ ./godic \
 - Would be nice to be able to support sqlite as well. 
 - Would be nice to support multiple versions of mysql and postgres and not just the latest ones.
 
+## WEB UI
+
+Supported browsers: chrome and firefox.
+
+![Screenshot of godic web interface](/docs/godic.jpg "godic web interface")
+
 ## Contributing
 Check repository [godic](https://github.com/ottotech/godic)
 
