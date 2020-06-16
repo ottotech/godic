@@ -122,12 +122,12 @@ For example:
 
 ```
 $ ./godic \
-    GODIC_DB_USER=master \
-    GODIC_DB_PASSWORD=secret \
-    GODIC_DB_HOST=NAME_OF_CONTAINER_SERVING_DB \
-    GODIC_DB_PORT=5432 \
-    GODIC_DB_NAME=mydb \ 
-    GODIC_DB_DRIVER=postgres
+  -db_user=master \
+  -db_password=secret \
+  -db_host=localhost \
+  -db_port=5432 \
+  -db_name=mydb \ 
+  -db_driver=postgres
 ``` 
 
 ## TODO
