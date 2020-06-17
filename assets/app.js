@@ -8,10 +8,88 @@ class DatabaseInfo extends React.Component {
         this.state = { info: data["DatabaseInfo"] };
     }
 
+    checkDatabaseChanges = () => {
+        let schema = window.location.protocol;
+        let host = window.location.host;
+        let endpoint = schema + "//" + host + "/check-changes";
+
+        fetch(endpoint, {
+            method: "GET",
+        }).then(res => {
+            if (res.status === 200) {
+                res.json().then((data) => {
+                    console.log(data)
+                    let newTables = data["new_tables"];
+                    let deletedTables = data["deleted_tables"];
+                    let columnChanges = data["column_changes"];
+                    let deletedCols = data["deleted_columns"];
+                    let newCols = data["new_columns"];
+
+                    if (newTables.length === 0 &&
+                        deletedTables.length === 0 &&
+                        columnChanges.length === 0 &&
+                        deletedCols.length === 0 &&
+                        newCols.length === 0) {
+                        alert("Database does not have any changes. It is up-to-date.")
+                        return;
+                    }
+
+                    let msg = "";
+                    if (newTables.length > 0) {
+                        msg += "\nThere are new tables created:\n"
+                        for (let i = 0; i < newTables.length; i++) {
+                            msg += "- " + newTables[i] + "\n"
+                        }
+                    }
+                    if (deletedTables.length > 0) {
+                        msg += "\nSome tables have been deleted:\n"
+                        for (let i = 0; i < deletedTables.length; i++) {
+                            msg += "- " + deletedTables[i] + "\n"
+                        }
+                    }
+                    if (columnChanges.length > 0) {
+                        msg += "\nThere has been some changes in existing columns:\n"
+                        for (let i = 0; i < columnChanges.length; i++) {
+                            msg += `- column (${columnChanges[i]["metadata"]["name"]}) in table (${columnChanges[i]["metadata"]["table_name"]}) suffered the following changes:\n${columnChanges[i]["changes_message"]}\n`
+                        }
+                    }
+                    if (deletedCols.length > 0) {
+                        msg += "\nSome columns have been deleted:\n"
+                        for (let i = 0; i < deletedCols.length; i++) {
+                            msg += `- column (${deletedCols[i]["name"]}) in table (${deletedCols[i]["table"]})\n`
+                        }
+                    }
+                    if (newCols.length > 0) {
+                        msg += "\nThere are some new columns in existing tables:\n"
+                        for (let i = 0; i < newCols.length; i++) {
+                            msg += `- new column (${newCols[i]["name"]}) in table (${newCols[i]["table"]})\n`
+                        }
+                    }
+
+                    let yes = confirm(msg);
+                    console.log(yes)
+                })
+            } else {
+                res.text().then((text) => {
+                    alert("An error occurred: " + text);
+                })
+            }
+        }).catch(function (error) {
+            console.log(error);
+        });
+    };
+
     render() {
 
         return (
             <div>
+                <button
+                    style={{width: 60, cursor: "pointer", marginBottom: 20}}
+                    type="button"
+                    onClick={this.checkDatabaseChanges}
+                >
+                    Sync
+                </button>
                 <p style={styles.p}><strong>Database name: </strong>{this.state.info["name"]}</p>
                 <p style={styles.p}><strong>Database user: </strong>{this.state.info["user"]}</p>
                 <p style={styles.p}><strong>Database host: </strong>{this.state.info["host"]}</p>
@@ -231,7 +309,7 @@ class Table extends React.Component{
                         value={this.props.tableDescription}
                     />
                     <button
-                        style={{width: 60}}
+                        style={{width: 60, cursor: "pointer"}}
                         type="button"
                         data-table-name={this.props.tableName}
                         data-table-idx={this.props.tableIdx}

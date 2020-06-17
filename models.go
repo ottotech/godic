@@ -41,6 +41,16 @@ func (t Tables) get(tableName string) (table, error) {
 	return table{}, errors.Errorf("there is no table with the given name %s", tableName)
 }
 
+// exists checks whether a table with the given tableName exists or not.
+func (t Tables) exists(tableName string) bool {
+	for i := range t {
+		if t[i].Name == tableName {
+			return true
+		}
+	}
+	return false
+}
+
 // colMetadata holds metadata about a column in a table from the database.
 type colMetadata struct {
 	ID            string   `json:"id"`
@@ -65,7 +75,7 @@ type colMetadata struct {
 // ColumnsMetadata is a collection of colMetadata.
 type ColumnsMetadata []colMetadata
 
-// getByColNameAndTableName will get the column metadata with the given colName in the given tableName.
+// getByColNameAndTableName will get the column metadata with the given colName from the given tableName.
 // If the column does not exist getByColNameAndTableName() will return an error.
 func (cols ColumnsMetadata) getByColNameAndTableName(colName string, tableName string) (colMetadata, error) {
 	for i := range cols {
@@ -85,6 +95,19 @@ func (cols ColumnsMetadata) getByColumnID(columnID string) (colMetadata, error) 
 		}
 	}
 	return colMetadata{}, errors.Errorf("column with id %s does not exist", columnID)
+}
+
+// getAllColumnsFromTable will get all the columns metadata from the given tableName.
+// If the table does not exist getAllColumnsFromTable will return an empty ColumnsMetadata slice.
+// The returning ColumnsMetadata will not contained sorted columns.
+func (cols ColumnsMetadata) getAllColumnsFromTable(tableName string) ColumnsMetadata {
+	tableCols := make(ColumnsMetadata, 0)
+	for _, c := range cols {
+		if c.TBName == tableName {
+			tableCols = append(tableCols, c)
+		}
+	}
+	return tableCols
 }
 
 // primaryKey holds information about a primary key.
@@ -212,4 +235,23 @@ func (ucs UniqueCols) get(colName string, tableName string) (uniqueCol, error) {
 	}
 	return uniqueCol{}, errors.Errorf("there is no column with an unique index with the given name %s and in the "+
 		"given table %s.", colName, tableName)
+}
+
+// columnChanges holds the column metadata of a column that has changed and it carries the changes as a message.
+type columnChanges struct {
+	colMetadata    `json:"metadata"`
+	ChangesMessage string `json:"changes_message"`
+}
+
+// deletedColumn holds general information about a deleted column.
+type deletedColumn struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Table string `json:"table"`
+}
+
+// newColumn holds general information about a new column from an existing table.
+type newColumn struct {
+	Name  string `json:"name"`
+	Table string `json:"table"`
 }

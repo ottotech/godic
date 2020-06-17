@@ -116,6 +116,31 @@ func getTableColumns(tableName string, conf *Config) ([]*sql.ColumnType, error) 
 	return rows.ColumnTypes()
 }
 
+// getTableColumn will get the column with the given ColName and in the given TableName as *sql.ColumnType
+func getTableColumn(colName string, tableName string, conf *Config) (*sql.ColumnType, error) {
+	var q string
+	if conf.DatabaseDriver == "postgres" {
+		q = fmt.Sprintf(psqlQueryGetColumn, colName, tableName)
+	} else if conf.DatabaseDriver == "mysql" {
+		q = fmt.Sprintf(mysqlQueryGetColumn, colName, tableName)
+	}
+	rows, err := DB.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cols, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+	if len(cols) != 1 {
+		return nil, fmt.Errorf(fmt.Sprintf("getTableColumns should return at least one column. We tried "+
+			"table=%s and col=%s", tableName, colName))
+	}
+	return cols[0], nil
+}
+
 // getPrimaryKeys will get all columns of the database tables that are primary keys.
 func getPrimaryKeys(conf *Config) (PrimaryKeys, error) {
 	pks := make(PrimaryKeys, 0)
@@ -280,6 +305,397 @@ func compareStoredDatabaseInfoWithConf(dbInfo databaseInfo, conf *Config) (equal
 	return
 }
 
+// getNewTablesChanges will return a [] with the names of all new tables in the database.
+func getNewTablesChanges(repo Repository, conf *Config) (newTables []string, err error) {
+	newTables = make([]string, 0)
+
+	storedTables, err := repo.GetTables()
+	if err != nil {
+		return newTables, err
+	}
+
+	databaseTableNames, err := getTableNames(conf)
+	if err != nil {
+		return newTables, err
+	}
+
+	for _, name := range databaseTableNames {
+		isNew := true
+		for _, storedTable := range storedTables {
+			if storedTable.Name == name {
+				isNew = false
+				break
+			}
+		}
+		if isNew {
+			newTables = append(newTables, name)
+		}
+	}
+
+	return newTables, nil
+}
+
+// getDeletedTablesChanges will return a [] with the names of the tables that were deleted in the database.
+func getDeletedTablesChanges(repo Repository, conf *Config) (deletedTables []string, err error) {
+	deletedTables = make([]string, 0)
+
+	storedTables, err := repo.GetTables()
+	if err != nil {
+		return deletedTables, err
+	}
+	databaseTableNames, err := getTableNames(conf)
+	if err != nil {
+		return deletedTables, err
+	}
+
+	for _, storedTable := range storedTables {
+		deleted := true
+		for _, databaseTableName := range databaseTableNames {
+			if storedTable.Name == databaseTableName {
+				deleted = false
+				break
+			}
+		}
+		if deleted {
+			deletedTables = append(deletedTables, storedTable.Name)
+		}
+	}
+	return
+}
+
+// getNewColumnChanges will return all new columns created in the database of existing stored tables.
+func getNewColumnChanges(repo Repository, conf *Config) ([]newColumn, error) {
+	newCols := make([]newColumn, 0)
+
+	storedTables, err := repo.GetTables()
+	if err != nil {
+		return newCols, err
+	}
+
+	storedColumnsMetadata, err := repo.GetColumns()
+	if err != nil {
+		return newCols, err
+	}
+
+	tables, err := getTableNames(conf)
+	if err != nil {
+		return newCols, err
+	}
+
+	for _, name := range tables {
+		// We don't care about new tables's columns so we continue to the next iteration.
+		if !storedTables.exists(name) {
+			continue
+		}
+		tableCols, err := getTableColumns(name, conf)
+		if err != nil {
+			return newCols, err
+		}
+		for _, col := range tableCols {
+			// if err != nil, we understand that we are dealing with a new column in an existing table, in that
+			// case we store the new column in our slice newCols.
+			if _, err := storedColumnsMetadata.getByColNameAndTableName(col.Name(), name); err != nil {
+				nc := newColumn{
+					Name:  col.Name(),
+					Table: name,
+				}
+				newCols = append(newCols, nc)
+			}
+		}
+	}
+
+	return newCols, nil
+}
+
+// getDeletedColumnsChanges will return a []deletedColumn of all columns that were deleted in the database.
+func getDeletedColumnsChanges(repo Repository, conf *Config) (deletedCols []deletedColumn, err error) {
+	deletedCols = make([]deletedColumn, 0)
+
+	storedTables, err := repo.GetTables()
+	if err != nil {
+		return deletedCols, err
+	}
+
+	storedColumnsMetadata, err := repo.GetColumns()
+	if err != nil {
+		return deletedCols, err
+	}
+
+	tables, err := getTableNames(conf)
+	if err != nil {
+		return deletedCols, err
+	}
+
+	for _, name := range tables {
+		// We don't care about new tables's columns so we continue to the next iteration.
+		if !storedTables.exists(name) {
+			continue
+		}
+		tableCols, err := getTableColumns(name, conf)
+		if err != nil {
+			return deletedCols, err
+		}
+		storedTableCols := storedColumnsMetadata.getAllColumnsFromTable(name)
+
+		for _, storedCol := range storedTableCols {
+			hasBeenDeleted := true
+			for _, currentCol := range tableCols {
+				if storedCol.Name == currentCol.Name() {
+					hasBeenDeleted = false
+					break
+				}
+			}
+			if hasBeenDeleted {
+				dc := deletedColumn{
+					ID:    storedCol.ID,
+					Name:  storedCol.Name,
+					Table: storedCol.TBName,
+				}
+				deletedCols = append(deletedCols, dc)
+			}
+		}
+	}
+
+	return deletedCols, nil
+}
+
+// getColumnChanges will return all changes of the columns of the existing stored tables of the database.
+// getColumnChanges will not care about new columns in new tables, but on existing ones.
+func getColumnChanges(repo Repository, conf *Config) (colChanges []columnChanges, err error) {
+	changes := make([]columnChanges, 0)
+
+	storedColumnsMetadata, err := repo.GetColumns()
+	if err != nil {
+		return changes, err
+	}
+
+	currentTablesNames, err := getTableNames(conf)
+	if err != nil {
+		return changes, err
+	}
+
+	for _, currentTableName := range currentTablesNames {
+		currentColumns, err := getTableColumns(currentTableName, conf)
+		if err != nil {
+			return changes, err
+		}
+		for _, currentCol := range currentColumns {
+			currentColMetadata, err := columnMetadataBuilder(currentTableName, currentCol, conf)
+			if err != nil {
+				return changes, err
+			}
+			storedColMetadata, err := storedColumnsMetadata.getByColNameAndTableName(currentColMetadata.Name, currentColMetadata.TBName)
+			// if there is an err we know here that we are dealing with a new column. If the column is coming from
+			// a non-existent table (meaning new table) we go to the next iteration since we only care about changes in
+			// columns in existing tables.
+			if err != nil {
+				continue
+			}
+			// Here we compare the stored metadata of a column with the current metadata of the same column,
+			// if there are differences we register the changes in columnChanges.
+			if equal, msg, err := compareColumnMetadata(storedColMetadata, currentColMetadata); err != nil {
+				return changes, err
+			} else if !equal {
+				change := columnChanges{
+					colMetadata:    storedColMetadata,
+					ChangesMessage: msg,
+				}
+				changes = append(changes, change)
+			}
+		}
+
+	}
+
+	return changes, nil
+}
+
+// columnMetadataBuilder is a helper func that creates a colMetadata object with the correct attributes.
+func columnMetadataBuilder(tableName string, col *sql.ColumnType, conf *Config) (colMetadata, error) {
+	colMetadata := colMetadata{}
+
+	primaryKeys, err := getPrimaryKeys(conf)
+	if err != nil {
+		return colMetadata, err
+	}
+
+	foreignKeys, err := getForeignKeys(conf)
+	if err != nil {
+		return colMetadata, err
+	}
+
+	enums, err := getColsAndEnums(conf)
+	if err != nil {
+		return colMetadata, err
+	}
+
+	uniques, err := getUniqueCols(conf)
+	if err != nil {
+		return colMetadata, err
+	}
+
+	colMetadata.Name = col.Name()
+	colMetadata.DBType = col.DatabaseTypeName()
+	colMetadata.Nullable = parseNullableFromCol(col)
+	colMetadata.GoType = col.ScanType().String()
+	colMetadata.Length = parseLengthFromCol(col)
+	colMetadata.TBName = tableName
+
+	if isPK := primaryKeys.exists(colMetadata.Name, tableName); isPK {
+		colMetadata.IsPrimaryKey = true
+	}
+
+	if isFK := foreignKeys.exists(colMetadata.Name, tableName); isFK {
+		fk, err := foreignKeys.get(colMetadata.Name, tableName)
+		if err != nil {
+			return colMetadata, err
+		}
+		colMetadata.IsForeignKey = true
+		colMetadata.TargetTableFK = fk.TargetTable
+		colMetadata.DeleteRule = fk.DeleteRule
+		colMetadata.UpdateRule = fk.UpdateRule
+	}
+
+	if hasEnum := enums.exists(colMetadata.Name, tableName); hasEnum {
+		enum, err := enums.get(colMetadata.Name, tableName)
+		if err != nil {
+			return colMetadata, err
+		}
+		colMetadata.HasENUM = true
+		colMetadata.ENUMName = enum.EnumName
+		colMetadata.ENUMValues = strings.Split(enum.EnumValues, ",")
+	}
+
+	if hasUniqueIndex := uniques.exists(colMetadata.Name, tableName); hasUniqueIndex {
+		colMetadata.IsUnique = true
+	}
+
+	return colMetadata, nil
+}
+
+// compareColumnMetadata is a helper function that compares two versions of a column's metadata, the stored one and one
+// created dynamically. This is handy when checking if there are changes in a column of a database table, for example.
+// The returned msg -if any- contains information about the changes in the column. This helper func should always
+// compare two instances of the same column metadata.
+func compareColumnMetadata(storedMetadata colMetadata, metadata colMetadata) (equal bool, msg string, err error) {
+	differences := make([]string, 0)
+	if storedMetadata.TBName != metadata.TBName || storedMetadata.Name != metadata.Name {
+		fmt.Printf("%+v\n", storedMetadata)
+		fmt.Printf("%+v\n", metadata)
+		return false, "", fmt.Errorf("you can only compare metadata of the same column and table. "+
+			"Cannot compare table=%s column=%s with table=%s column=%s", storedMetadata.TBName, storedMetadata.Name,
+			metadata.TBName, metadata.Name)
+	}
+
+	if storedMetadata.IsUnique != metadata.IsUnique {
+		s := ""
+		if metadata.IsUnique {
+			s = "column is unique now."
+		} else {
+			s = "column is not unique anymore."
+		}
+		differences = append(differences, s)
+	}
+
+	if storedMetadata.IsPrimaryKey != metadata.IsPrimaryKey {
+		s := ""
+		if metadata.IsPrimaryKey {
+			s = "column is primary key now."
+		} else {
+			s = "column is not a primary key anymore."
+		}
+		differences = append(differences, s)
+	}
+
+	if storedMetadata.IsForeignKey != metadata.IsForeignKey {
+		s := ""
+		if metadata.IsForeignKey {
+			s = "column is foreign key now."
+		} else {
+			s = "column is not a foreign key anymore."
+		}
+		differences = append(differences, s)
+	}
+
+	if storedMetadata.HasENUM != metadata.HasENUM {
+		s := ""
+		if metadata.HasENUM {
+			s = "column type is ENUM now."
+		} else {
+			s = "column type is not of type ENUM anymore."
+		}
+		differences = append(differences, s)
+	}
+
+	if storedMetadata.HasENUM && metadata.HasENUM {
+		if storedMetadata.ENUMName != metadata.ENUMName {
+			differences = append(differences, fmt.Sprintf("column enum name changed from (%s) to (%s)",
+				storedMetadata.ENUMName, metadata.ENUMName))
+		}
+		for _, storedEnumVal := range storedMetadata.ENUMValues {
+			exists := false
+			for _, enumVal := range metadata.ENUMValues {
+				if enumVal == storedEnumVal {
+					exists = true
+				}
+			}
+			if !exists {
+				differences = append(differences, fmt.Sprintf("column enum value %s has been removed.", storedEnumVal))
+			}
+		}
+		if len(metadata.ENUMValues) > len(storedMetadata.ENUMValues) {
+			differences = append(differences, "column has new enum values.")
+		}
+	}
+
+	if storedMetadata.Nullable != metadata.Nullable {
+		s := ""
+		if metadata.Nullable {
+			s = "column is nullable now."
+		} else {
+			s = "column is not nullable anymore."
+		}
+		differences = append(differences, s)
+	}
+
+	if storedMetadata.IsForeignKey && metadata.IsForeignKey {
+		if storedMetadata.DeleteRule != metadata.DeleteRule {
+			differences = append(differences, fmt.Sprintf("foreign key delete rule changed from (%s) to (%s).",
+				storedMetadata.DeleteRule, metadata.DeleteRule))
+		}
+		if storedMetadata.UpdateRule != metadata.UpdateRule {
+			differences = append(differences, fmt.Sprintf("foreign key update rule changed from (%s) to (%s).",
+				storedMetadata.UpdateRule, metadata.UpdateRule))
+		}
+		if storedMetadata.TargetTableFK != metadata.TargetTableFK {
+			differences = append(differences, fmt.Sprintf("column foreign key is targeting a different table "+
+				"before it was (%s) and not it is (%s).", storedMetadata.TargetTableFK, metadata.TargetTableFK))
+		}
+	}
+
+	if storedMetadata.DBType != metadata.DBType {
+		differences = append(differences, fmt.Sprintf("column database type changed from %s to %s.",
+			storedMetadata.DBType, metadata.DBType))
+	}
+
+	// Here we know that both columns are of varchar type.
+	if strings.Contains(strings.ToLower(storedMetadata.DBType), "varchar") ==
+		strings.Contains(strings.ToLower(metadata.DBType), "varchar") {
+		if storedMetadata.Length != metadata.Length {
+			differences = append(differences, fmt.Sprintf("column varchar length changed from %d to %d.",
+				storedMetadata.Length, metadata.Length))
+		}
+	}
+
+	var message string
+	if len(differences) > 0 {
+		message = strings.Join(differences, ".\n")
+	} else if len(differences) == 0 {
+		equal = true
+	}
+
+	return equal, message, nil
+}
+
 var psqlQueryGetPKs = `
 	SELECT cu.column_name, 
 		   cu.table_name 
@@ -389,3 +805,6 @@ var mysqlQueryGetUniquesColumns = `
 
 var mysqlQueryGetColumns = "SELECT * FROM `%s` LIMIT 0;"
 var psqlQueryGetColumns = "SELECT * FROM %q LIMIT 0;"
+
+var mysqlQueryGetColumn = "SELECT %s FROM `%s` LIMIT 0;"
+var psqlQueryGetColumn = "SELECT %s FROM %q LIMIT 0;"

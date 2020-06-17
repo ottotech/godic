@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 var DB *sql.DB
@@ -102,6 +103,7 @@ func run(conf *Config) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index(storage))
 	mux.HandleFunc("/update", updateTableDictionary(storage))
+	mux.HandleFunc("/check-changes", checkDatabaseChanges(storage, conf))
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
 	mux.HandleFunc("/js/app.js", serveJSDevelopment())
 	mux.Handle("/react-compiled/", http.StripPrefix("/react-compiled", http.FileServer(http.Dir("./react"))))
@@ -217,6 +219,78 @@ func updateTableDictionary(repo Repository) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func checkDatabaseChanges(repo Repository, conf *Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
+			return
+		}
+
+		newTables, err := getNewTablesChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		deletedTables, err := getDeletedTablesChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		colChanges, err := getColumnChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		newCols, err := getNewColumnChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		deletedCols, err := getDeletedColumnsChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		responseData := struct {
+			NewTables      []string        `json:"new_tables"`
+			DeletedTables  []string        `json:"deleted_tables"`
+			ColumnChanges  []columnChanges `json:"column_changes"`
+			NewColumns     []newColumn     `json:"new_columns"`
+			DeletedColumns []deletedColumn `json:"deleted_columns"`
+		}{
+			newTables,
+			deletedTables,
+			colChanges,
+			newCols,
+			deletedCols,
+		}
+
+		sb, err := json.MarshalIndent(responseData, "", strings.Repeat(" ", 3))
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(sb)
+		if err != nil {
+			_logger.Println(err)
+		}
 	}
 }
 
