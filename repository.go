@@ -10,6 +10,8 @@ type Repository interface {
 	GetColumns() (ColumnsMetadata, error)
 	UpdateAddTableDescription(tableID string, description string) error
 	UpdateAddColumnDescription(columnID string, description string) error
+	RemoveTable(tableID string) error
+	RemoveColMetadata(colID string) error
 	Setup
 }
 

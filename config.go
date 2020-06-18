@@ -57,6 +57,5 @@ func ParseFlags(programName string, args []string) (config *Config, output strin
 	if err != nil {
 		return nil, buf.String(), err
 	}
-
 	return &conf, buf.String(), nil
 }

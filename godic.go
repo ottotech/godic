@@ -104,6 +104,7 @@ func run(conf *Config) error {
 	mux.HandleFunc("/", index(storage))
 	mux.HandleFunc("/update", updateTableDictionary(storage))
 	mux.HandleFunc("/check-changes", checkDatabaseChanges(storage, conf))
+	mux.HandleFunc("/sync-db", syncDatabase(storage, conf))
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
 	mux.HandleFunc("/js/app.js", serveJSDevelopment())
 	mux.Handle("/react-compiled/", http.StripPrefix("/react-compiled", http.FileServer(http.Dir("./react"))))
@@ -291,6 +292,155 @@ func checkDatabaseChanges(repo Repository, conf *Config) http.HandlerFunc {
 		if err != nil {
 			_logger.Println(err)
 		}
+	}
+}
+
+func syncDatabase(repo Repository, conf *Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Let's remove the tables that do not exist anymore.
+		deletedTables, err := getDeletedTablesChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		for _, dt := range deletedTables {
+			err := repo.RemoveTable(dt)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Let's add the new tables and their columns metadata.
+		newTables, err := getNewTablesChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		for _, nt := range newTables {
+			t := table{Name: nt}
+			err = repo.AddTable(t)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			cols, err := getTableColumns(nt, conf)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			for _, col := range cols {
+				colMeta, err := columnMetadataBuilder(nt, col, conf)
+				if err != nil {
+					_logger.Println(err)
+					http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+					return
+				}
+				err = repo.AddColMetaData(nt, colMeta)
+				if err != nil {
+					_logger.Println(err)
+					http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+					return
+				}
+			}
+		}
+
+		// Let update the existing columns with the new changes.
+		// For this, we are going to remove the old column and just create the same column, but with the updates.
+		colChanges, err := getColumnChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		for _, change := range colChanges {
+			storedColMetadata := change.colMetadata
+			currentCol, err := getTableColumn(storedColMetadata.Name, storedColMetadata.TBName, conf)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			currentColMetadata, err := columnMetadataBuilder(storedColMetadata.TBName, currentCol, conf)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			err = repo.RemoveColMetadata(storedColMetadata.ID)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			err = repo.AddColMetaData(currentColMetadata.TBName, currentColMetadata)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Let's add the new columns metadata of existing tables.
+		newCols, err := getNewColumnChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		for _, nc := range newCols {
+			col, err := getTableColumn(nc.Name, nc.Table, conf)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			colMetadata, err := columnMetadataBuilder(nc.Table, col, conf)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			err = repo.AddColMetaData(nc.Table, colMetadata)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Let's remove the deleted existing columns.
+		deletedCols, err := getDeletedColumnsChanges(repo, conf)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+		for _, dc := range deletedCols {
+			err = repo.RemoveColMetadata(dc.ID)
+			if err != nil {
+				_logger.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// If all goes well, we have successfully synced the database with the new changes.
+		w.WriteHeader(http.StatusOK)
 	}
 }
 

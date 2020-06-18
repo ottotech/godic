@@ -5,7 +5,38 @@ const e = React.createElement;
 class DatabaseInfo extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { info: data["DatabaseInfo"] };
+        this.state = {
+            info: data["DatabaseInfo"],
+            syncIndicator:false
+        };
+        this.syncDatabase = this.syncDatabase.bind(this);
+    }
+
+    syncDatabase = () => {
+        let schema = window.location.protocol;
+        let host = window.location.host;
+        let endpoint = schema + "//" + host + "/sync-db";
+
+        // Let's start the syncing indicator...
+        this.setState({syncIndicator: true})
+
+        fetch(endpoint, {
+            method: "POST",
+        }).then(res => {
+            this.setState({syncIndicator: false})
+            if (res.status === 200) {
+                alert("The database has been synced successfully.")
+                window.location.href = "/"
+                return
+            }
+            res.text().then((text) => {
+                alert("An error occurred, your database might not be synced completely. Please run again the sync function: \n" + text);
+            })
+        }).catch(function (error) {
+            console.log(error);
+            this.setState({syncIndicator: false})
+            alert("An error occurred, your database might not be synced completely. Please run again the sync function: \n" + error);
+        });
     }
 
     checkDatabaseChanges = () => {
@@ -33,8 +64,11 @@ class DatabaseInfo extends React.Component {
                         alert("Database does not have any changes. It is up-to-date.")
                         return;
                     }
+                    let topMsg = "Before syncing the database scroll down and check all changes detected by godic, if you want " +
+                        "to proceed with the synchronization press OK. When existing columns are updated godic will remove " +
+                        "the previous descriptions saved, so godic will force you to update the columns's descriptions.\n\n"
+                    let msg = topMsg+"";
 
-                    let msg = "";
                     if (newTables.length > 0) {
                         msg += "\nThere are new tables created:\n"
                         for (let i = 0; i < newTables.length; i++) {
@@ -67,7 +101,9 @@ class DatabaseInfo extends React.Component {
                     }
 
                     let yes = confirm(msg);
-                    console.log(yes)
+                    if (yes) {
+                        this.syncDatabase();
+                    }
                 })
             } else {
                 res.text().then((text) => {
@@ -80,9 +116,13 @@ class DatabaseInfo extends React.Component {
     };
 
     render() {
-
+        let indicator = null;
+        if (this.state.syncIndicator) {
+            indicator = <SyncIndicator/>
+        }
         return (
             <div>
+                {indicator}
                 <button
                     style={{width: 60, cursor: "pointer", marginBottom: 20}}
                     type="button"
@@ -98,6 +138,43 @@ class DatabaseInfo extends React.Component {
                 <p style={styles.p}><strong>Database port: </strong>{this.state.info["port"]}</p>
             </div>
         );
+    }
+}
+
+class SyncIndicator extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {text: "Syncing database, please wait"};
+        this.changeText = this.changeText.bind(this);
+    }
+
+    componentDidMount() {
+        setInterval(this.changeText, 500);
+    }
+
+    changeText = () => {
+        let dot = ".";
+        let text = this.state.text;
+        let idx = text.indexOf(".");
+        if (idx === -1) {
+            text+=dot
+        } else {
+            let dots = text.slice(idx,text.length);
+            if (dots.length === 1 || dots.length === 2 ) {
+                text+=dot
+            } else {
+                text = text.substr(0, idx);
+            }
+        }
+        this.setState({text:text})
+    }
+
+    render() {
+        return (
+            <h1>
+                {this.state.text}
+            </h1>
+        )
     }
 }
 

@@ -169,3 +169,30 @@ func (s *jsonStorage) GetColumns() (ColumnsMetadata, error) {
 	}
 	return columns, nil
 }
+
+func (s *jsonStorage) RemoveTable(tableID string) error {
+	allCols, err := s.GetColumns()
+	if err != nil {
+		return err
+	}
+	tableCols := allCols.getAllColumnsFromTable(tableID)
+	for _, c := range tableCols {
+		err := s.db.Delete(collectionColumn, c.ID)
+		if err != nil {
+			return err
+		}
+	}
+	err = s.db.Delete(collectionTable, tableID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *jsonStorage) RemoveColMetadata(colID string) error {
+	err := s.db.Delete(collectionColumn, colID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

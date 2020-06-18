@@ -49,7 +49,7 @@ func setupInitialMetadata(storage Repository, conf *Config) error {
 			"Host: %s\n"+
 			"Password: %s\n"+
 			"Driver: %s\n\n"+
-			"If you want to remove this all database meta data you can run godic with the "+
+			"If you want to remove this all database metadata you can run godic with the "+
 			"flag -force_delete=true (see documentation for this flag)\n",
 			databaseInfo.Name,
 			databaseInfo.Port,
