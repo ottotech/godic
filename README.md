@@ -79,14 +79,16 @@ See example below to check how you can use this mount point.
 
 ```
 $ docker run -d \
-    --name some-godic \
+    --name some-godic-instance \
     -e GODIC_DB_USER=master \
     -e GODIC_DB_PASSWORD=secret \
     -e GODIC_DB_HOST=NAME_OF_CONTAINER_SERVING_DB \
     -e GODIC_DB_PORT=5432 \
     -e GODIC_DB_NAME=mydb \ 
     -e GODIC_DB_DRIVER=postgres \
+    -e GODIC_DB_SCHEMA=public \
     -v godic_mount:/go/src/github.com/ottotech/godic/data \
+    -p 8080:8080 \
     --network godic_net \
     godic
 ```
@@ -127,7 +129,8 @@ $ ./godic \
   -db_host=localhost \
   -db_port=5432 \
   -db_name=mydb \ 
-  -db_driver=postgres
+  -db_driver=postgres \
+  -db_schema=public  
 ``` 
 
 ## TODO
