@@ -3,7 +3,7 @@ godic [![Build Status](https://travis-ci.org/ottotech/godic.svg?branch=master)](
 
 ## Overview
 
-**godic** is a web application written in Go that helps you create and maintain a [data dictionary](https://en.wikipedia.org/wiki/Data_dictionary) of your relational database. <br> Currently it supports both mysql and postgres databases (latest versions). 
+**godic** is a web application written in Go that helps you create and maintain a [data dictionary](https://en.wikipedia.org/wiki/Data_dictionary) of your relational database automatically. <br> Currently it supports both mysql and postgres databases (latest versions). 
 
 ## How to use?
 
@@ -161,6 +161,14 @@ There you are, you can start contributing on the go code or the UI.
 This project uses react for websites, see [link](https://reactjs.org/docs/add-react-to-a-website.html)
 
 If you make any changes, run ```go fmt ./...``` before submitting a pull request.
+
+## Notes
+
+godic by no means is a robust solution for maintaining your data dictionary, specially for big databases or organizations.
+It serves my personal use cases. Since we are using a file system storage this is prone to errors. You might feel 
+tempted to create your own storage for robustness and implement the Repository interface, I will advise you to do so.
+
+I won't be actively improving this repo, but from time to time I will try to enhance it :)
 
 ## License
 
