@@ -90,7 +90,7 @@ $ docker run -d \
     -v godic_mount:/go/src/github.com/ottotech/godic/data \
     -p 8080:8080 \
     --network godic_net \
-    godic
+    ottosg/godic
 ```
 
 **NOTE**
