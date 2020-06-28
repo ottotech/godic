@@ -7,9 +7,11 @@ class DatabaseInfo extends React.Component {
         super(props);
         this.state = {
             info: data["DatabaseInfo"],
-            syncIndicator:false
+            syncIndicator:false,
+            checkIndicator:false,
         };
         this.syncDatabase = this.syncDatabase.bind(this);
+        this.checkDatabaseChanges = this.checkDatabaseChanges.bind(this);
     }
 
     syncDatabase = () => {
@@ -44,12 +46,15 @@ class DatabaseInfo extends React.Component {
         let host = window.location.host;
         let endpoint = schema + "//" + host + "/check-changes";
 
+        // Let's start the check indicator...
+        this.setState({checkIndicator: true})
+
         fetch(endpoint, {
             method: "GET",
         }).then(res => {
+            this.setState({checkIndicator: false})
             if (res.status === 200) {
                 res.json().then((data) => {
-                    console.log(data)
                     let newTables = data["new_tables"];
                     let deletedTables = data["deleted_tables"];
                     let columnChanges = data["column_changes"];
@@ -111,14 +116,21 @@ class DatabaseInfo extends React.Component {
                 })
             }
         }).catch(function (error) {
+            this.setState({checkIndicator: false})
             console.log(error);
         });
     };
 
     render() {
-        let indicator = null;
-        if (this.state.syncIndicator) {
-            indicator = <SyncIndicator/>
+        let showSyncIndicator = this.state.syncIndicator;
+        let showCheckIndicator = this.state.checkIndicator;
+        let indicator;
+        if (showSyncIndicator) {
+            indicator = <SyncIndicator text={"Syncing database, please wait"}/>
+        } else if (showCheckIndicator) {
+            indicator = <SyncIndicator text={"Checking database changes, please wait"}/>
+        } else {
+            indicator = null;
         }
         return (
             <div>
@@ -142,13 +154,17 @@ class DatabaseInfo extends React.Component {
 }
 
 class SyncIndicator extends React.Component {
+    _isMounted = false;
+
     constructor(props) {
         super(props);
-        this.state = {text: "Syncing database, please wait"};
+        let text = this.props.text;
+        this.state = {text: text};
         this.changeText = this.changeText.bind(this);
     }
 
     componentDidMount() {
+        this._isMounted = true;
         setInterval(this.changeText, 500);
     }
 
@@ -166,7 +182,13 @@ class SyncIndicator extends React.Component {
                 text = text.substr(0, idx);
             }
         }
-        this.setState({text:text})
+        if (this._isMounted) {
+            this.setState({text:text})
+        }
+    }
+
+    componentWillUnmount() {
+        this._isMounted = false;
     }
 
     render() {
@@ -415,7 +437,6 @@ class Table extends React.Component{
     }
 }
 
-
 class TopBtn extends React.Component {
     constructor(props){
         super(props);
@@ -478,7 +499,6 @@ class TopBtn extends React.Component {
         )
     }
 }
-
 
 const styles = {
     p: {
