@@ -20,15 +20,15 @@ class DatabaseInfo extends React.Component {
         let endpoint = schema + "//" + host + "/sync-db";
 
         // Let's start the syncing indicator...
-        this.setState({syncIndicator: true})
+        this.setState({syncIndicator: true});
 
         fetch(endpoint, {
             method: "POST",
         }).then(res => {
-            this.setState({syncIndicator: false})
+            this.setState({syncIndicator: false});
             if (res.status === 200) {
-                alert("The database has been synced successfully.")
-                window.location.href = "/"
+                alert("The database has been synced successfully.");
+                window.location.href = "/";
                 return
             }
             res.text().then((text) => {
@@ -36,10 +36,10 @@ class DatabaseInfo extends React.Component {
             })
         }).catch(function (error) {
             console.log(error);
-            this.setState({syncIndicator: false})
+            this.setState({syncIndicator: false});
             alert("An error occurred, your database might not be synced completely. Please run again the sync function: \n" + error);
         });
-    }
+    };
 
     checkDatabaseChanges = () => {
         let schema = window.location.protocol;
@@ -47,12 +47,12 @@ class DatabaseInfo extends React.Component {
         let endpoint = schema + "//" + host + "/check-changes";
 
         // Let's start the check indicator...
-        this.setState({checkIndicator: true})
+        this.setState({checkIndicator: true});
 
         fetch(endpoint, {
             method: "GET",
         }).then(res => {
-            this.setState({checkIndicator: false})
+            this.setState({checkIndicator: false});
             if (res.status === 200) {
                 res.json().then((data) => {
                     let newTables = data["new_tables"];

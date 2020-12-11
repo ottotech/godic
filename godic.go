@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var DB *sql.DB
@@ -22,6 +23,9 @@ var allowedDrivers = [2]string{
 	"mysql",
 	"postgres",
 }
+
+var indexHtml *template.Template
+var onceHtmlInit sync.Once
 
 const psqlDbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
 const mysqlDbSource string = "{user}:{password}@tcp({host}:{port})/{database}"
@@ -106,7 +110,7 @@ func run(conf *Config) error {
 	mux.HandleFunc("/check-changes", checkDatabaseChanges(storage, conf))
 	mux.HandleFunc("/sync-db", syncDatabase(storage, conf))
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
-	mux.HandleFunc("/js/app.js", serveJSDevelopment())
+	mux.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(http.Dir("./assets"))))
 	mux.Handle("/react-compiled/", http.StripPrefix("/react-compiled", http.FileServer(http.Dir("./react"))))
 	srv := http.Server{
 		Addr:    ":" + strconv.Itoa(conf.ServerPort),
@@ -122,18 +126,10 @@ func run(conf *Config) error {
 
 func index(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sb, err := Asset("assets/index.html")
-		if err != nil {
-			_logger.Println(err)
-			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
-			return
-		}
-		tpl, err := template.New("").Parse(string(sb))
-		if err != nil {
-			_logger.Println(err)
-			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
-			return
-		}
+
+		onceHtmlInit.Do(func() {
+			indexHtml = template.Must(template.ParseFiles("assets/index.html"))
+		})
 
 		info, err := repo.GetDatabaseInfo()
 		if err != nil {
@@ -173,7 +169,7 @@ func index(repo Repository) http.HandlerFunc {
 			production,
 		}
 
-		err = tpl.Execute(w, data)
+		err = indexHtml.Execute(w, data)
 		if err != nil {
 			_logger.Println(err)
 			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
@@ -441,20 +437,5 @@ func syncDatabase(repo Repository, conf *Config) http.HandlerFunc {
 
 		// If all goes well, we have successfully synced the database with the new changes.
 		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func serveJSDevelopment() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sb, err := Asset("assets/app.js")
-		if err != nil {
-			_logger.Println(err)
-			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
-			return
-		}
-		_, err = w.Write(sb)
-		if err != nil {
-			_logger.Println(err)
-		}
 	}
 }
