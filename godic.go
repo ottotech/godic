@@ -111,6 +111,7 @@ func run(conf *Config) error {
 	mux.HandleFunc("/sync-db", syncDatabase(storage, conf))
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
 	mux.HandleFunc("/js/app.js", serveJSDevelopment())
+	mux.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(http.Dir("./assets"))))
 	mux.Handle("/react-compiled/", http.StripPrefix("/react-compiled", http.FileServer(http.Dir("./react"))))
 	srv := http.Server{
 		Addr:    ":" + strconv.Itoa(conf.ServerPort),

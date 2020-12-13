@@ -1,6 +1,10 @@
 'use strict';
 
 const e = React.createElement;
+let Accordion = ReactBootstrap.Accordion;
+let Card = ReactBootstrap.Card;
+let Button = ReactBootstrap.Button;
+
 
 class DatabaseInfo extends React.Component {
     constructor(props) {
@@ -116,7 +120,7 @@ class DatabaseInfo extends React.Component {
                 })
             }
         }).catch(function (error) {
-            this.setState({checkIndicator: false})
+            this.setState({checkIndicator: false});
             console.log(error);
         });
     };
@@ -185,7 +189,7 @@ class SyncIndicator extends React.Component {
         if (this._isMounted) {
             this.setState({text:text})
         }
-    }
+    };
 
     componentWillUnmount() {
         this._isMounted = false;
@@ -215,7 +219,7 @@ class TablesData extends React.Component {
         let columns = data["Columns"];
 
         for (let j = 0; j < tables.length; j++) {
-            let cols = []
+            let cols = [];
 
             for (let i = 0; i < columns.length; i++) {
                 if (columns[i]["table_name"] === tables[j]["name"]) {
@@ -226,8 +230,8 @@ class TablesData extends React.Component {
             // we need to sort the cols accordingly, the rule is that
             // the PK will go in the first place and FKs will follow,
             // the rest of the columns will go afterwards.
-            let pkIdx = false
-            let fksIdx = []
+            let pkIdx;
+            let fksIdx = [];
             for (let w = 0; w < cols.length; w++) {
                 if (cols[w]["is_primary_key"] === true) {
                     pkIdx = w
@@ -237,12 +241,12 @@ class TablesData extends React.Component {
             }
 
             if (typeof pkIdx === "number") {
-                let pkObj = cols.splice(pkIdx, 1)[0]
+                let pkObj = cols.splice(pkIdx, 1)[0];
                 cols.splice(0, 0, pkObj)
             }
 
             for (let z = 0; z < fksIdx.length; z++) {
-                let fkObj = cols.splice(fksIdx[z], 1)[0]
+                let fkObj = cols.splice(fksIdx[z], 1)[0];
                 cols.splice(1, 0, fkObj)
             }
 
@@ -308,7 +312,7 @@ class TablesData extends React.Component {
         let tables = this.state.tables;
         tables[tableIdx]["description"] = e.target.value;
         this.setState({tables});
-    }
+    };
 
     onChangeColumnDesc = (e) => {
         let tableIdx = e.target.getAttribute("data-table-idx");
@@ -316,21 +320,36 @@ class TablesData extends React.Component {
         let tables = this.state.tables;
         tables[tableIdx]["columns"][colIdx]["description"] = e.target.value;
         this.setState({tables});
-    }
+    };
 
     rendeTables() {
-        return this.state.tables.map((table, i) =>
-            <Table
-                key={i}
-                tableIdx={i}
-                tableName={table["name"]}
-                tableID={table["id"]}
-                tableDescription={table["description"]}
-                tableColumns={table["columns"]}
-                onChangeColumnDesc={this.onChangeColumnDesc}
-                onChangeTableDesc={this.onChangeTableDesc}
-                onClickSave={this.updateTableDictionary}
-            />
+        return (
+            <Accordion>
+                {this.state.tables.map((table, i) =>
+                    <Card>
+                        <Card.Header>
+                            <Accordion.Toggle as={Card.Header} variant="link" eventKey={i.toString()}>
+                                {table["name"]}
+                            </Accordion.Toggle>
+                        </Card.Header>
+                        <Accordion.Collapse eventKey={i.toString()}>
+                            <Card.Body>
+                                <Table
+                                    key={i}
+                                    tableIdx={i}
+                                    tableName={table["name"]}
+                                    tableID={table["id"]}
+                                    tableDescription={table["description"]}
+                                    tableColumns={table["columns"]}
+                                    onChangeColumnDesc={this.onChangeColumnDesc}
+                                    onChangeTableDesc={this.onChangeTableDesc}
+                                    onClickSave={this.updateTableDictionary}
+                                />
+                            </Card.Body>
+                        </Accordion.Collapse>
+                    </Card>
+                )}
+            </Accordion>
         )
     }
 
@@ -349,22 +368,22 @@ class Table extends React.Component{
     renderColumns = () => {
         return this.props.tableColumns.map((col, i) => {
 
-            let key = ""
+            let key = "";
             if (col["is_primary_key"]) {
                 key = "PK"
             } else if (col["is_foreign_key"]) {
                 key = "FK"
             }
 
-            let dbType = col["db_type"]
+            let dbType = col["db_type"];
             if (col["db_type"].toUpperCase() === "VARCHAR") {
                 dbType = dbType + "(" + col["length"] + ")"
              }
 
 
-            let nullable = col["nullable"] === true ? "YES" : "NO"
+            let nullable = col["nullable"] === true ? "YES" : "NO";
 
-            let unique = col["is_unique"] === true ? "YES" : "NO"
+            let unique = col["is_unique"] === true ? "YES" : "NO";
 
             return(
                 <tr key={i}>
@@ -384,7 +403,7 @@ class Table extends React.Component{
                             data-col-id={col["id"]}
                             data-col-idx={i}
                             onChange={this.props.onChangeColumnDesc}
-                            rows="5"
+                            rows="3"
                             cols="50"
                             value={col["description"]}
                         />
@@ -392,11 +411,11 @@ class Table extends React.Component{
                 </tr>
             )
         })
-    }
+    };
 
     render() {
         return (
-            <div style={{marginTop: 50}}>
+            <div style={{marginTop: 5}}>
                 <p style={styles.p}><strong>Table: </strong>{this.props.tableName}</p>
                 <p style={styles.p}><strong>Description:</strong></p>
                 <div style={{display: "flex"}}>
@@ -517,7 +536,7 @@ const styles = {
         marginLeft: 3,
         outline: "none"
     }
-}
+};
 
 const domContainer = document.querySelector('#databaseInfo');
 const domContainerTwo = document.querySelector('#tablesData');
