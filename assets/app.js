@@ -305,7 +305,7 @@ class TablesData extends React.Component {
         }).catch(function (error) {
             console.log(error);
         });
-    }
+    };
 
     onChangeTableDesc = (e) => {
         let tableIdx = e.target.getAttribute("data-table-idx");
@@ -322,33 +322,31 @@ class TablesData extends React.Component {
         this.setState({tables});
     };
 
-    rendeTables() {
-        return (
+    renderTables() {
+        return this.state.tables.map((table, i) =>
             <Accordion>
-                {this.state.tables.map((table, i) =>
-                    <Card>
-                        <Card.Header>
-                            <Accordion.Toggle as={Card.Header} variant="link" eventKey={i.toString()}>
-                                {table["name"]}
-                            </Accordion.Toggle>
-                        </Card.Header>
-                        <Accordion.Collapse eventKey={i.toString()}>
-                            <Card.Body>
-                                <Table
-                                    key={i}
-                                    tableIdx={i}
-                                    tableName={table["name"]}
-                                    tableID={table["id"]}
-                                    tableDescription={table["description"]}
-                                    tableColumns={table["columns"]}
-                                    onChangeColumnDesc={this.onChangeColumnDesc}
-                                    onChangeTableDesc={this.onChangeTableDesc}
-                                    onClickSave={this.updateTableDictionary}
-                                />
-                            </Card.Body>
-                        </Accordion.Collapse>
-                    </Card>
-                )}
+                <Card key={i}>
+                    <Card.Header>
+                        <Accordion.Toggle as={Card.Header} variant="link" eventKey={i.toString()}>
+                            {table["name"]}
+                        </Accordion.Toggle>
+                    </Card.Header>
+                    <Accordion.Collapse eventKey={i.toString()}>
+                        <Card.Body>
+                            <Table
+                                key={i}
+                                tableIdx={i}
+                                tableName={table["name"]}
+                                tableID={table["id"]}
+                                tableDescription={table["description"]}
+                                tableColumns={table["columns"]}
+                                onChangeColumnDesc={this.onChangeColumnDesc}
+                                onChangeTableDesc={this.onChangeTableDesc}
+                                onClickSave={this.updateTableDictionary}
+                            />
+                        </Card.Body>
+                    </Accordion.Collapse>
+                </Card>
             </Accordion>
         )
     }
@@ -356,7 +354,7 @@ class TablesData extends React.Component {
     render() {
         return (
             <div>
-                {this.rendeTables()}
+                {this.renderTables()}
                 <TopBtn/>
             </div>
         );
@@ -526,16 +524,6 @@ const styles = {
     table: {
         border: "1px solid black"
     },
-    saveBtn: {
-        color: "white",
-        padding: "15px 32px",
-        textAlign: "center",
-        fontSize: 16,
-        cursor: "pointer",
-        backgroundColor: "#008CBA",
-        marginLeft: 3,
-        outline: "none"
-    }
 };
 
 const domContainer = document.querySelector('#databaseInfo');
