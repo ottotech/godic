@@ -324,8 +324,8 @@ class TablesData extends React.Component {
 
     renderTables() {
         return this.state.tables.map((table, i) =>
-            <Accordion>
-                <Card key={i}>
+            <Accordion key={i}>
+                <Card>
                     <Card.Header>
                         <Accordion.Toggle as={Card.Header} variant="link" eventKey={i.toString()}>
                             {table["name"]}
