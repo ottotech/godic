@@ -255,3 +255,9 @@ type newColumn struct {
 	Name  string `json:"name"`
 	Table string `json:"table"`
 }
+
+// Domain represents the different domains to group a database table.
+type Domain struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}

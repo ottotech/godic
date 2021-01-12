@@ -8,6 +8,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -109,6 +110,9 @@ func run(conf *Config) error {
 	mux.HandleFunc("/update", updateTableDictionary(storage))
 	mux.HandleFunc("/check-changes", checkDatabaseChanges(storage, conf))
 	mux.HandleFunc("/sync-db", syncDatabase(storage, conf))
+	mux.HandleFunc("/create-domain", CreateDomain(storage))
+	mux.HandleFunc("/get-domains", GetDomains(storage))
+	mux.HandleFunc("/link-table-with-domain", LinkTableWithDomain(storage))
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
 	mux.HandleFunc("/js/app.js", serveJSDevelopment())
 	mux.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(http.Dir("./assets"))))
@@ -468,5 +472,125 @@ func serveJSDevelopment() http.HandlerFunc {
 		if err != nil {
 			_logger.Println(err)
 		}
+	}
+}
+
+func CreateDomain(repo Repository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
+			return
+		}
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		var domain Domain
+
+		err = json.Unmarshal(body, &domain)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		// Let's do some cleanup.
+		domain.Name = strings.TrimSpace(domain.Name)
+		domain.Description = strings.TrimSpace(domain.Description)
+
+		// Let's validate that there are no missing fields.
+		if domain.Name == "" || domain.Description == "" {
+			http.Error(w, fmt.Sprintf("Missing fields: %+v", domain), http.StatusBadRequest)
+			return
+		}
+
+		// Let's try to save the new domain in the db.
+		err = repo.CreateDomain(domain)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		// If all goes well. We reply with an OK status.
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func GetDomains(repo Repository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
+			return
+		}
+
+		domains, err := repo.GetDomains()
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		sb, err := json.Marshal(domains)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(sb)
+		if err != nil {
+			_logger.Println(err)
+		}
+	}
+}
+
+func LinkTableWithDomain(repo Repository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
+			return
+		}
+
+		requestData := struct {
+			TableID    string `json:"table_id"`
+			DomainName string `json:"domain_name"`
+		}{}
+
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		err = json.Unmarshal(body, &requestData)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		requestData.TableID = strings.TrimSpace(requestData.TableID)
+		requestData.DomainName = strings.TrimSpace(requestData.DomainName)
+
+		if requestData.TableID == "" || requestData.DomainName == "" {
+			http.Error(w, fmt.Sprintf("Missing fields: %+v", requestData), http.StatusBadRequest)
+			return
+		}
+
+		err = repo.LinkTableWithDomain(requestData.TableID, requestData.DomainName)
+		if err != nil {
+			_logger.Println(err)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }

@@ -2,7 +2,10 @@ package main
 
 import "errors"
 
-var ErrNoDatabaseMetaDataStored = errors.New("there is no database metadata stored in repository")
+var (
+	ErrNoDatabaseMetaDataStored = errors.New("there is no database metadata stored in repository")
+	ErrTableIsLinkedWithDomain  = errors.New("table is already linked with domain")
+)
 
 type Repository interface {
 	GetDatabaseInfo() (databaseInfo, error)
@@ -12,6 +15,9 @@ type Repository interface {
 	UpdateAddColumnDescription(columnID string, description string) error
 	RemoveTable(tableID string) error
 	RemoveColMetadata(colID string) error
+	GetDomains() ([]Domain, error)
+	CreateDomain(domain Domain) error
+	LinkTableWithDomain(tableID, domainName string) error
 	Setup
 }
 

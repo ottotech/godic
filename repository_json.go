@@ -20,6 +20,12 @@ const (
 
 	// db identifier for the database info.
 	db = "db"
+
+	// collectionDomain identifier for the JSON collection of domains.
+	collectionDomain = "domains"
+
+	// collectionDomainTable identifier for the JSON collection of the link between tables and domains.
+	collectionDomainTable = "domain_tables"
 )
 
 // jsonStorage stores the data in json files.
@@ -194,5 +200,83 @@ func (s *jsonStorage) RemoveColMetadata(colID string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (s *jsonStorage) GetDomains() ([]Domain, error) {
+	domains := make([]Domain, 0)
+
+	list, err := s.db.ReadAll(collectionDomain)
+	if err != nil {
+		// If any domains haven't been created yet,
+		// we don't want to throw an error.
+		if os.IsNotExist(err) {
+			return domains, nil
+		}
+		return nil, err
+	}
+
+	for i := range list {
+		var domain Domain
+		err := json.Unmarshal([]byte(list[i]), &domain)
+		if err != nil {
+			return domains, err
+		}
+		domains = append(domains, domain)
+	}
+
+	return domains, nil
+}
+
+func (s *jsonStorage) CreateDomain(domain Domain) error {
+	err := s.db.Write(collectionDomain, domain.Name, domain)
+	if err != nil {
+		return errors.Errorf("got error while trying to create domain %s. %s", domain.Name, err)
+	}
+	return nil
+}
+
+func (s *jsonStorage) LinkTableWithDomain(tableID, domainName string) error {
+	type data struct {
+		ID         string `json:"id"`
+		TableID    string `json:"table_id"`
+		DomainName string `json:"domain_name"`
+	}
+
+	list, err := s.db.ReadAll(collectionDomainTable)
+	if err != nil {
+		return err
+	}
+
+	// Let's check if link already exists. Here we have two simple rules.
+	// (1) If the table is already linked with the given domain name we do nothing.
+	// (2) If the table is linked with a different domain name we return ErrTableIsLinkedWithDomain.
+	for i := range list {
+		var d data
+		err = json.Unmarshal([]byte(list[i]), &d)
+		if err != nil {
+			return err
+		}
+
+		if d.TableID == tableID && d.DomainName == domainName {
+			return nil
+		}
+		if d.TableID == tableID && d.DomainName != domainName {
+			return ErrTableIsLinkedWithDomain
+		}
+	}
+
+	id := strconv.Itoa(len(list))
+	newLink := data{
+		ID:         id,
+		TableID:    tableID,
+		DomainName: domainName,
+	}
+
+	err = s.db.Write(collectionDomainTable, newLink.ID, newLink)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
