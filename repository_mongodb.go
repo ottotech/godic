@@ -284,21 +284,12 @@ func (s *mongoStorage) LinkTableWithDomain(tableID, domainName string) error {
 		DomainName string `json:"domain_name"`
 	}
 
+	opts := options.Update().SetUpsert(true)
 	filter := bson.D{{"table_id", tableID}, {"domain_name", domainName}}
+	update := bson.D{{"$set", bson.D{{"table_id", tableID}, {"domain_name", domainName}}}}
 
-	err := s.domainTableCollections.FindOne(context.TODO(), filter).Err()
-	switch {
-	case err == mongo.ErrNoDocuments:
-		_, insertErr := s.domainTableCollections.InsertOne(context.TODO(), data{
-			TableID:    tableID,
-			DomainName: domainName,
-		})
-		if insertErr != nil {
-			return insertErr
-		}
-	case err == nil:
-		return nil
-	default:
+	_, err := s.domainTableCollections.UpdateOne(context.TODO(), filter, update, opts)
+	if err != nil {
 		return err
 	}
 
