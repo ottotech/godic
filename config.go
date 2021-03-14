@@ -20,6 +20,7 @@ type Config struct {
 	ForceDelete      bool   `json:"force_delete"`
 	Storage          string `json:"storage"`
 	MongoDB          string `json:"mongo_db"`
+	MongoUri         string `json:"mongo_uri"`
 }
 
 // validate validates the configuration options given to Config.
@@ -44,6 +45,10 @@ func (c *Config) validate() (ok bool, msg string) {
 		return false, "You need to define the name you want to use for your mongo database."
 	}
 
+	if c.Storage == "mongo" && c.MongoUri == "" {
+		return false, "You need to define the uri to connect to your mongo db instance."
+	}
+
 	return true, ""
 }
 
@@ -65,6 +70,7 @@ func ParseFlags(programName string, args []string) (config *Config, output strin
 	flags.BoolVar(&conf.ForceDelete, "force_delete", envconf.FromEnvP("GODIC_FORCE_DELETE", false).(bool), "deletes completely any stored metadata of a database in order to start fresh")
 	flags.StringVar(&conf.Storage, "storage", envconf.FromEnvP("GODIC_DB_STORAGE", "json").(string), "storage type for saving data")
 	flags.StringVar(&conf.MongoDB, "mongo-db", envconf.FromEnvP("GODIC_MONGO_DB", "godicdb").(string), "mongo db name where we are going to save the data")
+	flags.StringVar(&conf.MongoUri, "mongo-uri", envconf.FromEnvP("GODIC_MONGO_URI", "").(string), "mongo uri fo your db instance")
 
 	err = flags.Parse(args)
 	if err != nil {
