@@ -73,6 +73,7 @@ func (s *mongoStorage) IsDatabaseMetaDataAdded(dbName string) (bool, error) {
 }
 
 func (s *mongoStorage) AddTable(t table) error {
+	t.ID = t.Name // The id for each table will be its name sine it is unique.
 	_, err := s.tableCollection.InsertOne(context.TODO(), t)
 	if err != nil {
 		return err
@@ -165,10 +166,34 @@ func (s *mongoStorage) RemoveEverything() error {
 }
 
 func (s *mongoStorage) UpdateAddTableDescription(tableID string, description string) error {
+	filter := bson.D{{"id", tableID}}
+	update := bson.D{{"$set", bson.D{{"description", description}}}}
+
+	result, err := s.tableCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no matched table with id (%s)", tableID)
+	}
+
 	return nil
 }
 
 func (s *mongoStorage) UpdateAddColumnDescription(columnID string, description string) error {
+	filter := bson.D{{"id", columnID}}
+	update := bson.D{{"$set", bson.D{{"description", description}}}}
+
+	result, err := s.columnCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no matched column with id (%s)", columnID)
+	}
+
 	return nil
 }
 
@@ -216,18 +241,66 @@ func (s *mongoStorage) RemoveTable(tableID string) error {
 }
 
 func (s *mongoStorage) RemoveColMetadata(colID string) error {
+	result, err := s.columnCollection.DeleteOne(context.TODO(), bson.D{{"id", colID}})
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("could not delete column with id (%s)", colID)
+	}
+
 	return nil
 }
 
 func (s *mongoStorage) GetDomains() ([]Domain, error) {
 	domains := make([]Domain, 0)
+
+	cursor, err := s.domainCollection.Find(context.TODO(), bson.D{})
+	if err != nil {
+		return domains, err
+	}
+
+	err = cursor.All(context.TODO(), &domains)
+	if err != nil {
+		return domains, err
+	}
+
 	return domains, nil
 }
 
 func (s *mongoStorage) CreateDomain(domain Domain) error {
+	_, err := s.domainCollection.InsertOne(context.TODO(), domain)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *mongoStorage) LinkTableWithDomain(tableID, domainName string) error {
+	type data struct {
+		TableID    string `json:"table_id"`
+		DomainName string `json:"domain_name"`
+	}
+
+	filter := bson.D{{"table_id", tableID}, {"domain_name", domainName}}
+
+	err := s.domainTableCollections.FindOne(context.TODO(), filter).Err()
+	switch {
+	case err == mongo.ErrNoDocuments:
+		_, insertErr := s.domainTableCollections.InsertOne(context.TODO(), data{
+			TableID:    tableID,
+			DomainName: domainName,
+		})
+		if insertErr != nil {
+			return insertErr
+		}
+	case err == nil:
+		return nil
+	default:
+		return err
+	}
+
 	return nil
 }
