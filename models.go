@@ -6,8 +6,8 @@ import (
 
 // databaseInfo holds general information about the database.
 type databaseInfo struct {
-	Name     string `json:"name"`
-	User     string `json:"user"`
+	Name     string `json:"name" bson:"name"`
+	User     string `json:"user" bson:"user"`
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	Password string `json:"password"`

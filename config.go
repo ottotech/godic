@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"github.com/ian-kent/envconf"
 )
 
@@ -17,6 +18,8 @@ type Config struct {
 	DatabaseDriver   string `json:"database_driver"`
 	DatabaseSchema   string `json:"database_schema"`
 	ForceDelete      bool   `json:"force_delete"`
+	Storage          string `json:"storage"`
+	MongoDB          string `json:"mongo_db"`
 }
 
 // validate validates the configuration options given to Config.
@@ -31,6 +34,14 @@ func (c *Config) validate() (ok bool, msg string) {
 	if c.DatabaseUser == "" || c.DatabasePassword == "" || c.DatabaseHost == "" || c.DatabasePort == 0 ||
 		c.DatabaseSchema == "" || c.DatabaseDriver == "" || c.DatabaseName == "" {
 		return
+	}
+
+	if c.Storage != "" && c.Storage != "mongo" {
+		return false, fmt.Sprintf("The only available storage option is %q.", "mongo")
+	}
+
+	if c.Storage == "mongo" && c.MongoDB == "" {
+		return false, "You need to define the name you want to use for your mongo database."
 	}
 
 	return true, ""
@@ -52,6 +63,8 @@ func ParseFlags(programName string, args []string) (config *Config, output strin
 	flags.StringVar(&conf.DatabaseDriver, "db_driver", envconf.FromEnvP("GODIC_DB_DRIVER", "").(string), "database driver")
 	flags.StringVar(&conf.DatabaseSchema, "db_schema", envconf.FromEnvP("GODIC_DB_SCHEMA", "public").(string), "database schema")
 	flags.BoolVar(&conf.ForceDelete, "force_delete", envconf.FromEnvP("GODIC_FORCE_DELETE", false).(bool), "deletes completely any stored metadata of a database in order to start fresh")
+	flags.StringVar(&conf.Storage, "storage", envconf.FromEnvP("GODIC_DB_STORAGE", "json").(string), "storage type for saving data")
+	flags.StringVar(&conf.MongoDB, "mongo-db", envconf.FromEnvP("GODIC_MONGO_DB", "godicdb").(string), "mongo db name where we are going to save the data")
 
 	err = flags.Parse(args)
 	if err != nil {

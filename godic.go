@@ -7,6 +7,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
+	"golang.org/x/net/context"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -77,9 +78,21 @@ func run(conf *Config) error {
 			conf.DatabasePort, conf.DatabaseName)
 	}
 
-	storage, err := NewJsonStorage()
-	if err != nil {
-		panic(err)
+	var repo Repository
+
+	switch conf.Storage {
+	case "mongo":
+		storage, err := NewMongoStorage(context.Background(), *conf)
+		if err != nil {
+			_logger.Fatalln(err)
+		}
+		repo = storage
+	default:
+		storage, err := NewJsonStorage()
+		if err != nil {
+			_logger.Fatalln(err)
+		}
+		repo = storage
 	}
 
 	db, err := sql.Open(conf.DatabaseDriver, source)
@@ -96,23 +109,23 @@ func run(conf *Config) error {
 	if conf.DatabaseDriver == "postgres" {
 		_, err = DB.Exec(fmt.Sprintf("SET search_path=%s", conf.DatabaseSchema))
 		if err != nil {
-			panic(err)
+			_logger.Fatalln(err)
 		}
 	}
 
-	err = setupInitialMetadata(storage, conf)
+	err = setupInitialMetadata(repo, conf)
 	if err != nil {
 		return err
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", index(storage))
-	mux.HandleFunc("/update", updateTableDictionary(storage))
-	mux.HandleFunc("/check-changes", checkDatabaseChanges(storage, conf))
-	mux.HandleFunc("/sync-db", syncDatabase(storage, conf))
-	mux.HandleFunc("/create-domain", CreateDomain(storage))
-	mux.HandleFunc("/get-domains", GetDomains(storage))
-	mux.HandleFunc("/link-table-with-domain", LinkTableWithDomain(storage))
+	mux.HandleFunc("/", index(repo))
+	mux.HandleFunc("/update", updateTableDictionary(repo))
+	mux.HandleFunc("/check-changes", checkDatabaseChanges(repo, conf))
+	mux.HandleFunc("/sync-db", syncDatabase(repo, conf))
+	mux.HandleFunc("/create-domain", CreateDomain(repo))
+	mux.HandleFunc("/get-domains", GetDomains(repo))
+	mux.HandleFunc("/link-table-with-domain", LinkTableWithDomain(repo))
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
 	mux.HandleFunc("/js/app.js", serveJSDevelopment())
 	mux.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(http.Dir("./assets"))))

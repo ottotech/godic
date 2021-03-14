@@ -8,26 +8,10 @@ import (
 	"strconv"
 )
 
-const (
-	// dir defines the name of the directory where the files are stored.
-	dir = "./data/"
+// dir defines the name of the directory where the files are stored.
+const dir = "./data/"
 
-	// collectionTable identifier for the JSON collection of tables.
-	collectionTable = "tables"
-
-	// collectionColumn identifier for the JSON collection of columns.
-	collectionColumn = "columns"
-
-	// db identifier for the database info.
-	db = "db"
-
-	// collectionDomain identifier for the JSON collection of domains.
-	collectionDomain = "domains"
-
-	// collectionDomainTable identifier for the JSON collection of the link between tables and domains.
-	collectionDomainTable = "domain_tables"
-)
-
+// jsonStorage stores the data in json files.
 // jsonStorage stores the data in json files.
 type jsonStorage struct {
 	db *scribble.Driver
