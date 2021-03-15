@@ -279,11 +279,6 @@ func (s *mongoStorage) CreateDomain(domain Domain) error {
 }
 
 func (s *mongoStorage) LinkTableWithDomain(tableID, domainName string) error {
-	type data struct {
-		TableID    string `json:"table_id"`
-		DomainName string `json:"domain_name"`
-	}
-
 	opts := options.Update().SetUpsert(true)
 	filter := bson.D{{"table_id", tableID}, {"domain_name", domainName}}
 	update := bson.D{{"$set", bson.D{{"table_id", tableID}, {"domain_name", domainName}}}}
