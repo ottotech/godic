@@ -59,7 +59,7 @@ func (s *mongoStorage) AddDatabaseInfo(dbInfo databaseInfo) error {
 
 func (s *mongoStorage) IsDatabaseMetaDataAdded(dbName string) (bool, error) {
 	dbInfo := databaseInfo{}
-	err := s.dbCollection.FindOne(context.Background(), bson.D{{"_id", 1}}).Decode(&dbInfo)
+	err := s.dbCollection.FindOne(context.Background(), bson.D{}).Decode(&dbInfo)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return false, nil
