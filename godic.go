@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"embed"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,13 +10,13 @@ import (
 	_ "github.com/lib/pq"
 	"golang.org/x/net/context"
 	"html/template"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 var DB *sql.DB
@@ -27,7 +28,23 @@ var allowedDrivers = [2]string{
 }
 
 var indexHtml *template.Template
-var onceHtmlInit sync.Once
+
+// tpl holds our index html template.
+//go:embed html/index.html
+var tpl embed.FS
+
+// embeddedStatic holds the static content
+// of the godic app.
+//go:embed static
+var embeddedStatic embed.FS
+
+func init() {
+	t, err := template.ParseFS(tpl, "html/index.html")
+	if err != nil {
+		panic(err)
+	}
+	indexHtml = t
+}
 
 const psqlDbSource string = "user=%s password=%s host=%s port=%d dbname=%s sslmode=disable"
 const mysqlDbSource string = "{user}:{password}@tcp({host}:{port})/{database}"
@@ -118,8 +135,13 @@ func run(conf *Config) error {
 		return err
 	}
 
+	var useOS bool
+	if !conf.Production {
+		useOS = true
+	}
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", index(repo))
+	mux.HandleFunc("/", index(repo, conf))
 	mux.HandleFunc("/update", updateTableDictionary(repo))
 	mux.HandleFunc("/check-changes", checkDatabaseChanges(repo, conf))
 	mux.HandleFunc("/sync-db", syncDatabase(repo, conf))
@@ -127,9 +149,7 @@ func run(conf *Config) error {
 	mux.HandleFunc("/get-domains", GetDomains(repo))
 	mux.HandleFunc("/link-table-with-domain", LinkTableWithDomain(repo))
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
-	mux.HandleFunc("/js/app.js", serveJSDevelopment())
-	mux.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(http.Dir("./assets"))))
-	mux.Handle("/react-compiled/", http.StripPrefix("/react-compiled", http.FileServer(http.Dir("./react"))))
+	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(getFileSystem(useOS))))
 	srv := http.Server{
 		Addr:    ":" + strconv.Itoa(conf.ServerPort),
 		Handler: mux,
@@ -142,33 +162,8 @@ func run(conf *Config) error {
 	return nil
 }
 
-func index(repo Repository) http.HandlerFunc {
+func index(repo Repository, conf *Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		production := false
-		if onProduction, _ := strconv.ParseBool(os.Getenv("PRODUCTION")); onProduction {
-			production = onProduction
-		}
-
-		if production {
-			onceHtmlInit.Do(func() {
-				indexHtml = template.Must(template.ParseFiles("assets/index.html"))
-			})
-		} else {
-			sb, err := Asset("assets/index.html")
-			if err != nil {
-				_logger.Println(err)
-				http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
-				return
-			}
-			indexHtml, err = template.New("").Parse(string(sb))
-			if err != nil {
-				_logger.Println(err)
-				http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
-				return
-			}
-		}
-
 		info, err := repo.GetDatabaseInfo()
 		if err != nil {
 			_logger.Println(err)
@@ -199,7 +194,7 @@ func index(repo Repository) http.HandlerFunc {
 			info,
 			tables,
 			cols,
-			production,
+			conf.Production,
 		}
 
 		err = indexHtml.Execute(w, data)
@@ -473,21 +468,6 @@ func syncDatabase(repo Repository, conf *Config) http.HandlerFunc {
 	}
 }
 
-func serveJSDevelopment() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sb, err := Asset("assets/app.js")
-		if err != nil {
-			_logger.Println(err)
-			http.Error(w, fmt.Sprintf("Template error: %s", err), http.StatusInternalServerError)
-			return
-		}
-		_, err = w.Write(sb)
-		if err != nil {
-			_logger.Println(err)
-		}
-	}
-}
-
 func CreateDomain(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -606,4 +586,16 @@ func LinkTableWithDomain(repo Repository) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func getFileSystem(useOS bool) http.FileSystem {
+	if useOS {
+		return http.FS(os.DirFS("static"))
+	}
+
+	fsys, err := fs.Sub(embeddedStatic, "static")
+	if err != nil {
+		panic(err)
+	}
+	return http.FS(fsys)
 }

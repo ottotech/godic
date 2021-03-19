@@ -41,7 +41,7 @@ func setupInitialMetadata(storage Repository, conf *Config) error {
 			}
 			return fmt.Errorf("got error when trying to run storage.GetDatabaseInfo(); %s", err)
 		}
-		return fmt.Errorf("there is already some metadata stored for the database %s "+
+		return fmt.Errorf("There is already some metadata stored for the database %s "+
 			"with the following info:\n"+
 			"Port: %d\n"+
 			"User: %s\n"+

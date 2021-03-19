@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>godic</title>
-    <link href="/assets/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <link href="/static/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
-
 <div style="margin-left: 10px" id="databaseInfo"></div>
 <div style="margin-top: 30px; margin-left: 10px" id="tablesData"></div>
 <script>
@@ -14,15 +13,14 @@
 </script>
 
 {{ if .Production}}
-    <script src="react-compiled/react.production.min.js"></script>
-    <script src="react-compiled/react-dom.production.min.js"></script>
-    <script src="react-compiled/app.min.js"></script>
+    <script src="/static/react-dom.production.min.js"></script>
+    <script src="/static/app.min.js"></script>
 {{else}}
     <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <script src="https://unpkg.com/react-bootstrap@1.5.2/dist/react-bootstrap.min.js" crossorigin></script>
-    <script type="text/babel" src="/js/app.js"></script>
+    <script type="text/babel" src="/static/app.js"></script>
 {{end}}
 
 </body>

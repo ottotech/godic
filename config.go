@@ -21,6 +21,7 @@ type Config struct {
 	Storage          string `json:"storage"`
 	MongoDB          string `json:"mongo_db"`
 	MongoUri         string `json:"mongo_uri"`
+	Production       bool   `json:"-"`
 }
 
 // validate validates the configuration options given to Config.
@@ -71,6 +72,8 @@ func ParseFlags(programName string, args []string) (config *Config, output strin
 	flags.StringVar(&conf.Storage, "storage", envconf.FromEnvP("GODIC_DB_STORAGE", "json").(string), "storage type for saving data")
 	flags.StringVar(&conf.MongoDB, "mongo-db", envconf.FromEnvP("GODIC_MONGO_DB", "godicdb").(string), "mongo db name where we are going to save the data")
 	flags.StringVar(&conf.MongoUri, "mongo-uri", envconf.FromEnvP("GODIC_MONGO_URI", "").(string), "mongo uri fo your db instance")
+
+	conf.Production = envconf.FromEnvP("PRODUCTION", false).(bool)
 
 	err = flags.Parse(args)
 	if err != nil {
